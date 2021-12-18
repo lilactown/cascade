@@ -1,6 +1,4 @@
-(ns lilactown.walk 
-  (:require
-    [clojure.walk :as c.w]))
+(ns lilactown.hike)
 
 
 (declare visit)
