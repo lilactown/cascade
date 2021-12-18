@@ -1,7 +1,7 @@
 (ns lilactown.hike)
 
 
-(declare visit)
+(declare walk)
 
 
 (defn map-entry
@@ -10,51 +10,50 @@
      :cljs (cljs.core/MapEntry. mk mv nil)))
 
 
-(defn- visit-coll
+(defn- walk-coll
   [k inner outer c]
   (fn walk-coll-loop
-    ([] (walk-coll-loop (transient (empty c)) c))
+    ([] (walk-coll-loop (empty c) c))
     ([c' items]
      (if-let [item (first items)]
-       #(visit
+       #(walk
          (fn [item']
            (walk-coll-loop
-            (conj! c' (outer item'))
+            (conj c' (outer item'))
             (rest items)))
          inner
          outer
          (inner item))
-       #(k (persistent! c'))))))
+       #(k c')))))
 
 
-(defn- visit-map-entry
+(defn- walk-map-entry
   [k inner outer e]
   (fn walk-map-entry-loop
     ([] (walk-map-entry-loop (key e)))
     ([mk]
-     #(visit
+     #(walk
        (fn [mk']
          (walk-map-entry-loop (outer mk') (val e)))
        inner
        outer
        (inner mk)))
     ([mk mv]
-     #(visit
+     #(walk
        (fn [mv']
          (fn [] (k (map-entry mk (outer mv')))))
        inner
        outer
        (inner mv)))))
 
-
-(defn- visit-record
+;; records can't be transients so we reproduce walk-coll w/o transients
+(defn- walk-record
   [k inner outer r]
   (fn walk-record-loop
-    ;; records can't be transients so we reproduce visit-coll w/o transients
     ([] (walk-record-loop r r))
     ([r' entries]
      (if-let [entry (first entries)]
-       #(visit
+       #(walk
          (fn [entry']
            (walk-record-loop
             (conj r' (outer entry'))
@@ -65,28 +64,42 @@
        #(k r')))))
 
 
-(defn- visit
-  [k inner outer form]
-  (cond
-    (map-entry? form) (visit-map-entry k inner outer form)
-    (record? form) (visit-record k inner outer form)
-    (coll? form) (visit-coll k inner outer form)
-    :else #(k form)))
+;; lists also can't be transients and we need to reverse it
+(defn- walk-list
+  [k inner outer l]
+  (fn walk-list-loop
+    ([] (walk-list-loop (empty l) l))
+    ([l' items]
+     (if-let [item (first items)]
+       #(walk
+         (fn [item']
+           (walk-list-loop
+            (conj l' (outer item'))
+            (rest items)))
+         inner
+         outer
+         (inner item))
+       #(k (reverse l'))))))
 
 
 (defn walk
-  [inner outer form]
-  (outer (trampoline visit identity inner outer (inner form))))
-
-
-(defn postwalk
-  [f form]
-  (walk identity f form))
+  [k inner outer form]
+  (cond
+    (or (list? form) (seq? form)) (walk-list k inner outer form)
+    (map-entry? form) (walk-map-entry k inner outer form)
+    (record? form) (walk-record k inner outer form)
+    (coll? form) (walk-coll k inner outer form)
+    :else #(k form)))
 
 
 (defn prewalk
   [f form]
-  (walk f identity form))
+  (trampoline walk identity f identity (f form)))
+
+
+(defn postwalk
+  [f form]
+  (f (trampoline walk identity identity f form)))
 
 
 (comment
