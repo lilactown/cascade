@@ -49,28 +49,23 @@
     (doseq [c colls]
       (let [walked (trampoline hike/walk-cont
                                identity
-                               hike/walk-coll
-                               identity identity
+                               identity identity ; inner outer
                                c)]
         (is (= c walked))
         (is (= (type c) (type walked)))
         #_(if (map? c)
-            (is (= (trampoline
-                    hike/walk
-                    identity
-                    #(if (map-entry? %)
-                       (update-in % [1] inc)
-                       %)
-                    #(if (map-entry? %)
-                       (reduce + (vals %))
-                       %)
+          (is (= (reduce + (map (comp inc val) c))
+                 (trampoline
+                  hike/walk-cont
+                  identity
+                  #(update-in (doto % prn) [1] inc) ; inner
+                  #(reduce + (vals %)) ; outer
+                  c)))
+          #_(is (= (hike/walk
+                    inc
+                    #(reduce + %)
                     c)
-                   (reduce + (map (comp inc val) c))))
-            #_(is (= (hike/walk
-                      inc
-                      #(reduce + %)
-                      c)
-                     (reduce + (map inc c)))))
+                   (reduce + (map inc c)))))
         (when (or (instance? clojure.lang.PersistentTreeMap c)
                   (instance? clojure.lang.PersistentTreeSet c))
           (is (= (.comparator c) (.comparator walked))))))))

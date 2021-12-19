@@ -1,40 +1,6 @@
 (ns lilactown.hike)
 
 
-(defn map-entry
-  [[mk mv]]
-  #?(:clj (clojure.lang.MapEntry/create mk mv)
-     :cljs (cljs.core/MapEntry. mk mv nil)))
-
-
-(defn walk-cont
-  [k branch inner outer form]
-  (let [k (if (map-entry? form)
-            (comp k outer map-entry)
-            (comp k outer))
-        acc (cond
-              (map-entry? form) []
-              (record? form) form
-              :else (empty form))]
-    (if (coll? form)
-      (branch
-       k
-       (fn [done item]
-         (walk-cont done branch inner outer item))
-       acc
-       (inner form))
-      #(k (inner form)))))
-
-
-#_(trampoline
-   walk
-   identity
-   (fn [done _branch _acc coll] (done coll))
-   identity
-   #(reduce + %)
-   '(1 2 3))
-
-
 (defn reduce-cont
   ([k step acc coll]
    (reduce-cont k step acc (seq coll) (first coll)))
@@ -80,14 +46,47 @@
    [1 2 3])
 
 
+(defn map-entry
+  [[mk mv]]
+  #?(:clj (clojure.lang.MapEntry/create mk mv)
+     :cljs (cljs.core/MapEntry. mk mv nil)))
+
+
+(defn walk-cont
+  [k inner outer form]
+  (let [k (if (map-entry? form)
+            (comp k outer map-entry)
+            (comp k outer))
+        acc (cond
+              (map-entry? form) []
+              (record? form) form
+              :else (empty form))]
+    (if (coll? form)
+      (map-into-cont
+       k
+       (fn [k item]
+         (walk-cont k inner outer (inner item)))
+       acc
+       form)
+      #(k form))))
+
+
+#_(trampoline
+   walk-cont
+   identity
+   identity
+   #(reduce + %)
+   '(1 2 3))
+
+
 (defn prewalk
   [f form]
-  (trampoline walk-cont identity map-into-cont f identity form))
+  (trampoline walk-cont identity f identity (f form)))
 
 
 (defn postwalk
   [f form]
-  (trampoline walk-cont identity map-into-cont identity f form))
+  (trampoline walk-cont identity identity f form))
 
 
 (comment
