@@ -1,28 +1,28 @@
 (ns lilactown.hike-test
   (:require
-   [clojure.test :refer [deftest is testing]]
+   [clojure.test :refer [deftest is]]
    [lilactown.hike :as hike]))
 
 
 (deftest prewalk-order
-  (is (= (let [a (atom [])]
-           (hike/prewalk (fn [form] (swap! a conj form) form)
-                      [1 2 {:a 3} (list 4 [5])])
-           @a)
-         [[1 2 {:a 3} (list 4 [5])]
+  (is (= [[1 2 {:a 3} (list 4 [5])]
           1 2 {:a 3} [:a 3] :a 3 (list 4 [5])
-          4 [5] 5])))
+          4 [5] 5]
+         (let [a (atom [])]
+           (hike/prewalk (fn [form] (swap! a conj form) form)
+                         [1 2 {:a 3} (list 4 [5])])
+           @a))))
 
 
 (deftest postwalk-order
-  (is (= (let [a (atom [])]
-           (hike/postwalk (fn [form] (swap! a conj form) form)
-                       [1 2 {:a 3} (list 4 [5])])
-           @a)
-         [1 2
+  (is (= [1 2
           :a 3 [:a 3] {:a 3}
           4 5 [5] (list 4 [5])
-          [1 2 {:a 3} (list 4 [5])]])))
+          [1 2 {:a 3} (list 4 [5])]]
+         (let [a (atom [])]
+           (hike/postwalk (fn [form] (swap! a conj form) form)
+                          [1 2 {:a 3} (list 4 [5])])
+           @a))))
 
 
 (defrecord Foo [a b c])
@@ -48,7 +48,6 @@
                (map->Foo {:a 1 :b 2 :c 3 :extra 4})]]
     (doseq [c colls]
       (let [walked (trampoline hike/walk
-                               identity
                                identity identity
                                c)]
         (is (= c walked))
