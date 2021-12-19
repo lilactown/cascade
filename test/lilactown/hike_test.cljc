@@ -48,7 +48,7 @@
                (map->Foo {:a 1 :b 2 :c 3 :extra 4})]]
     (doseq [c colls]
       (let [walked (trampoline hike/walk
-                               identity identity
+                               identity identity identity
                                c)]
         (is (= c walked))
         (is (= (type c) (type walked)))
