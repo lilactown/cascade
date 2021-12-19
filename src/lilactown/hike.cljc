@@ -9,9 +9,9 @@
 
 (defn walk-cont
   [k branch inner outer form]
-  (let [k (cond
-               (map-entry? form) (comp k outer map-entry)
-               :else (comp k outer))
+  (let [k (if (map-entry? form)
+            (comp k outer map-entry)
+            (comp k outer))
         acc (cond
               (map-entry? form) []
               (record? form) form
@@ -35,20 +35,40 @@
    '(1 2 3))
 
 
-(defn map-into-cont
+(defn reduce-cont
   ([k step acc coll]
-   (map-into-cont k step acc (seq coll) (first coll)))
+   (reduce-cont k step acc (seq coll) (first coll)))
   ([k step acc items item]
    (if (seq items)
      ;; bounce
      #(step
-       (fn [item']
+       (fn [acc']
          (let [items (rest items)]
-           (map-into-cont k step (conj acc item') items (first items))))
+           (reduce-cont k step acc' items (first items))))
+       acc
        item)
      (if (or (list? acc) (seq? acc))
        #(k (reverse acc))
        #(k acc)))))
+
+
+#_(trampoline
+   reduce-cont
+   identity
+   (fn step [done acc n]
+     (done (+ acc n)))
+   0
+   '(1 2 3))
+
+
+(defn map-into-cont
+  [k f acc coll]
+  (reduce-cont
+   k
+   (fn step [done acc x]
+     (f #(done (conj acc %)) x))
+   acc
+   coll))
 
 
 #_(trampoline
