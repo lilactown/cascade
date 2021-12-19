@@ -10,14 +10,6 @@
      :cljs (cljs.core/MapEntry. mk mv nil)))
 
 
-(defn- walk-coll
-  ([next empty coll]
-   ;; include empty again b/c type signature needs to be different
-   (walk-coll next empty empty coll))
-  ([next _empty coll' items]
-   #(next next coll' items (first items))))
-
-
 (defn walk
   [done inner outer form]
   (if (coll? form)
@@ -32,14 +24,12 @@
           next (fn [next coll' items item]
                  (if (seq items)
                    (walk
-                    #(walk-coll
-                      next empty
-                      (conj coll' %) (rest items))
+                    #(let [items (rest items)]
+                       (next next (conj coll' %) items (first items)))
                     inner outer item)
-                   #(done coll')))]
-      (walk-coll
-       next
-       empty (inner form)))
+                   #(done coll')))
+          form' (inner form)]
+      #(next next empty form' (first form')))
     #(done (outer (inner form)))))
 
 
@@ -96,8 +86,10 @@
             :child (k)})
          (dec i)))))
 
+  (def limit 40000)
+
   (def really-nested-data
-    {:foo (trampoline create (constantly {:id 0}) 40000)})
+    {:foo (trampoline create (constantly {:id 0}) limit)})
 
   (do (c.w/postwalk identity really-nested-data)
       nil)
@@ -109,7 +101,13 @@
        #(if (number? %) (inc %) %)
        really-nested-data)
       nil)
+
+  (def really-long-data
+    {:foo (for [i (range 0 limit)]
+            {:id i
+             :child {:id (+ i limit)}})})
+
+  (postwalk
+   #(if (number? %) (inc %) %)
+   really-long-data)
   )
-
-
-
