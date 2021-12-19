@@ -1,6 +1,11 @@
 (ns lilactown.hike)
 
 
+(defn identity-cont
+  [k x]
+  (k x))
+
+
 (defn reduce-cont
   ([k step acc coll]
    (reduce-cont k step acc (seq coll) (first coll)))
@@ -65,7 +70,8 @@
       (map-into-cont
        k
        (fn [k item]
-         (walk-cont k inner outer (inner item)))
+         #_(walk-cont k inner outer (inner item))
+         (inner #(walk-cont k inner outer %) item))
        acc
        form)
       #(k form))))
@@ -81,12 +87,22 @@
 
 (defn prewalk
   [f form]
-  (trampoline walk-cont identity f identity (f form)))
+  (trampoline
+   walk-cont
+   identity ; k
+   (fn inner [k x] (k (f x)))
+   identity ; outer
+   (f form)))
 
 
 (defn postwalk
   [f form]
-  (trampoline walk-cont identity identity f form))
+  (trampoline
+   walk-cont
+   identity ; k
+   (fn inner [k x] (k x))
+   f ; outer
+   form))
 
 
 (comment

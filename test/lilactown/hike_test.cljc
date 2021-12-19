@@ -49,7 +49,7 @@
     (doseq [c colls]
       (let [walked (trampoline hike/walk-cont
                                identity
-                               identity identity ; inner outer
+                               hike/identity-cont identity ; inner outer
                                c)]
         (is (= c walked))
         (is (= (type c) (type walked)))
