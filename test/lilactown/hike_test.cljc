@@ -4,6 +4,21 @@
    [lilactown.hike :as hike]))
 
 
+(deftest prewalk-replace
+  (is (= [:b {:b :b} (list 3 :c :b)]
+         (hike/prewalk-replace {:a :b} [:a {:a :a} (list 3 :c :a)]))))
+
+
+(deftest postwalk-replace
+  (is (= [:b {:b :b} (list 3 :c :b)]
+         (hike/postwalk-replace {:a :b} [:a {:a :a} (list 3 :c :a)]))))
+
+
+(deftest stringify-keys
+  (is (= {"a" 1, nil {"b" 2 "c" 3}, "d" 4}
+         (hike/stringify-keys {:a 1, nil {:b 2 :c 3}, :d 4}))))
+
+
 (deftest prewalk-order
   (is (= [[1 2 {:a 3} (list 4 [5])]
           1 2 {:a 3} [:a 3] :a 3 (list 4 [5])
@@ -37,7 +52,6 @@
 
 
 (deftest walk
-  "Checks that visit returns the correct result and type of collection"
   (let [colls ['(1 2 3)
                [1 2 3]
                #{1 2 3}
@@ -74,3 +88,9 @@
         (when (or (instance? clojure.lang.PersistentTreeMap c)
                   (instance? clojure.lang.PersistentTreeSet c))
           (is (= (.comparator c) (.comparator walked))))))))
+
+
+(deftest walk-mapentry
+  (let [coll [:html {:a ["b" 1]} ""]
+        f (fn [e] (if (and (vector? e) (not (map-entry? e))) (apply list e) e))]
+    (is (= (list :html {:a (list "b" 1)} "") (hike/postwalk f coll)))))
