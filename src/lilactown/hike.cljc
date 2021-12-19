@@ -58,23 +58,24 @@
 
 
 (defn walk-cont
-  [k inner outer form]
-  (let [k (if (map-entry? form)
-            (comp k outer map-entry)
-            (comp k outer))
-        acc (cond
-              (map-entry? form) []
-              (record? form) form
-              :else (empty form))]
-    (if (coll? form)
-      (map-into-cont
-       k
-       (fn [k item]
-         #_(walk-cont k inner outer (inner item))
-         (inner #(walk-cont k inner outer %) item))
-       acc
-       form)
-      #(k form))))
+  ([inner-cont outer-cont form]
+   (walk-cont identity inner-cont outer-cont form))
+  ([k inner-cont outer-cont form]
+   (let [k (if (map-entry? form)
+             #(outer-cont k (map-entry %))
+             #(outer-cont k %))
+         acc (cond
+               (map-entry? form) []
+               (record? form) form
+               :else (empty form))]
+     (if (coll? form)
+       (map-into-cont
+        k
+        (fn step [k item]
+          (inner-cont k item))
+        acc
+        form)
+       #(k form)))))
 
 
 #_(trampoline
@@ -85,24 +86,36 @@
    '(1 2 3))
 
 
+(defn walk
+  [inner outer form]
+  (letfn [(outer-cont [k x] (k (outer x)))]
+    (trampoline
+    walk-cont
+    (fn inner-cont [k x]
+      (walk-cont k inner-cont outer-cont (inner x)))
+    outer-cont
+    (outer form))))
+
+
 (defn prewalk
   [f form]
   (trampoline
    walk-cont
-   identity ; k
-   (fn inner [k x] (k (f x)))
-   identity ; outer
+   (fn inner [k x]
+     (walk-cont k inner identity-cont (f x)))
+   identity-cont ; outer
    (f form)))
 
 
 (defn postwalk
   [f form]
-  (trampoline
-   walk-cont
-   identity ; k
-   (fn inner [k x] (k x))
-   f ; outer
-   form))
+  (letfn [(outer [k x] (k (f x)))]
+    (trampoline
+     walk-cont
+     (fn inner [k x]
+       (walk-cont k inner outer x))
+     outer
+     form)))
 
 
 (comment
@@ -163,11 +176,11 @@
        really-nested-data)
       nil)
 
-  (update
+  (update-in
    (postwalk
     #(if (number? %) (inc %) %)
     really-nested-data)
-   :foo
+   [:foo :child :child :child]
    dissoc :child)
 
   (def really-long-data
