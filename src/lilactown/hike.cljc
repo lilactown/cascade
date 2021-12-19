@@ -19,11 +19,11 @@
        #(walk
          (fn [item']
            (walk-coll-loop
-            (conj c' (outer item'))
+            (conj c' item')
             (rest items)))
          inner
          outer
-         (inner item))
+         item)
        #(k c')))))
 
 
@@ -34,17 +34,17 @@
     ([mk]
      #(walk
        (fn [mk']
-         (walk-map-entry-loop (outer mk') (val e)))
+         (walk-map-entry-loop mk' (val e)))
        inner
        outer
-       (inner mk)))
+       mk))
     ([mk mv]
      #(walk
        (fn [mv']
-         (fn [] (k (map-entry mk (outer mv')))))
+         (fn [] (k (map-entry mk mv'))))
        inner
        outer
-       (inner mv)))))
+       mv))))
 
 ;; records can't be transients so we reproduce walk-coll w/o transients
 (defn- walk-record
@@ -56,11 +56,11 @@
        #(walk
          (fn [entry']
            (walk-record-loop
-            (conj r' (outer entry'))
+            (conj r' entry')
             (rest entries)))
          inner
          outer
-         (inner entry))
+         entry)
        #(k r')))))
 
 
@@ -74,32 +74,40 @@
        #(walk
          (fn [item']
            (walk-list-loop
-            (conj l' (outer item'))
+            (conj l' item')
             (rest items)))
          inner
          outer
-         (inner item))
+         item)
        #(k (reverse l'))))))
 
 
 (defn walk
   [k inner outer form]
   (cond
-    (or (list? form) (seq? form)) (walk-list k inner outer form)
-    (map-entry? form) (walk-map-entry k inner outer form)
-    (record? form) (walk-record k inner outer form)
-    (coll? form) (walk-coll k inner outer form)
-    :else #(k form)))
+    (or (list? form) (seq? form))
+    (walk-list (comp k outer) inner outer (inner form))
+
+    (map-entry? form)
+    (walk-map-entry (comp k outer) inner outer (inner form))
+
+    (record? form)
+    (walk-record (comp k outer) inner outer (inner form))
+
+    (coll? form)
+    (walk-coll (comp k outer) inner outer (inner form))
+
+    :else #(k (outer (inner form)))))
 
 
 (defn prewalk
   [f form]
-  (trampoline walk identity f identity (f form)))
+  (trampoline walk identity f identity form))
 
 
 (defn postwalk
   [f form]
-  (f (trampoline walk identity identity f form)))
+  (trampoline walk identity identity f form))
 
 
 (comment

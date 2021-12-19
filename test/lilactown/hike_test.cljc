@@ -43,44 +43,33 @@
                #{1 2 3}
                (sorted-set-by > 1 2 3)
                {:a 1, :b 2, :c 3}
-               #_(sorted-map-by > 1 10, 2 20, 3 30)
+               (sorted-map-by > 1 10, 2 20, 3 30)
                (->Foo 1 2 3)
                (map->Foo {:a 1 :b 2 :c 3 :extra 4})]]
     (doseq [c colls]
-      (let [visited (trampoline hike/walk
-                                identity
-                                identity identity
-                                c)]
-        (is (= c visited))
-				;;(is (= (type c) (type walked)))
-        #_#_(if (map? c)
-              (is (= (hike/walk #(update-in % [1] inc) #(reduce + (vals %)) c)
-                     (reduce + (map (comp inc val) c))))
-              (is (= (hike/walk inc #(reduce + %) c)
-                     (reduce + (map inc c)))))
-          (when (or (instance? clojure.lang.PersistentTreeMap c)
-                    (instance? clojure.lang.PersistentTreeSet c))
-            (is (= (.comparator c) (.comparator walked))))))))
-
-
-(comment
-  (trampoline
-   hike/walk
-   identity
-   inc
-   identity
-   '(1 2 3))
-
-  (trampoline
-   hike/walk
-   identity
-   identity
-   #(reduce + %)
-   '(1 2 3))
-
-  (require '[clojure.walk :as w])
-
-  (w/walk #(doto % prn) identity '(1 2 3))
-
-  (w/walk identity #(doto % prn) '(1 2 3))
-  )
+      (let [walked (trampoline hike/walk
+                               identity
+                               identity identity
+                               c)]
+        (is (= c walked))
+        (is (= (type c) (type walked)))
+        #_(if (map? c)
+          (is (= (trampoline
+                  hike/walk
+                  identity
+                  #(if (map-entry? %)
+                     (update-in % [1] inc)
+                     %)
+                  #(if (map-entry? %)
+                     (reduce + (vals %))
+                     %)
+                  c)
+                 (reduce + (map (comp inc val) c))))
+          #_(is (= (hike/walk
+                  inc
+                  #(reduce + %)
+                  c)
+                 (reduce + (map inc c)))))
+        (when (or (instance? clojure.lang.PersistentTreeMap c)
+                  (instance? clojure.lang.PersistentTreeSet c))
+          (is (= (.comparator c) (.comparator walked))))))))
