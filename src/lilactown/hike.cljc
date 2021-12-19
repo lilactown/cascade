@@ -7,55 +7,67 @@
      :cljs (cljs.core/MapEntry. mk mv nil)))
 
 
-(defn walk
-  [done next inner outer form]
-  (if (coll? form)
-    (let [done (cond
-                 (or (list? form) (seq? form)) (comp done outer)
-                 (map-entry? form) (comp done outer map-entry)
-                 :else (comp done outer))
-          empty (cond
-                  (map-entry? form) []
-                  (record? form) form
-                  :else (empty form))
-          form' (inner form)]
-      ;; bounce
-      #(next done inner outer empty form' (first form')))
-    #(done (outer (inner form)))))
+(defn walk-cont
+  [k branch inner outer form]
+  (let [k (cond
+               (map-entry? form) (comp k outer map-entry)
+               :else (comp k outer))
+        acc (cond
+              (map-entry? form) []
+              (record? form) form
+              :else (empty form))]
+    (if (coll? form)
+      (branch
+       k
+       (fn [done item]
+         (walk-cont done branch inner outer item))
+       acc
+       (inner form))
+      #(k (inner form)))))
 
 
 #_(trampoline
- walk
- identity
- (fn [done _inner _outer _coll' coll _item] (done coll))
- identity
- #(reduce + %)
- '(1 2 3))
+   walk
+   identity
+   (fn [done _branch _acc coll] (done coll))
+   identity
+   #(reduce + %)
+   '(1 2 3))
 
 
-(defn walk-items
-  [done inner outer coll' items item]
-  (if (seq items)
-    ;; bounce
-    (walk
-     #(let [items (rest items)]
-        (walk-items done inner outer (conj coll' %) items (first items)))
-     walk-items
-     inner outer item)
-    #(done
-      (if (or (list? coll') (seq? coll'))
-        (reverse coll')
-        coll'))))
+(defn map-into-cont
+  ([k step acc coll]
+   (map-into-cont k step acc (seq coll) (first coll)))
+  ([k step acc items item]
+   (if (seq items)
+     ;; bounce
+     #(step
+       (fn [item']
+         (let [items (rest items)]
+           (map-into-cont k step (conj acc item') items (first items))))
+       item)
+     (if (or (list? acc) (seq? acc))
+       #(k (reverse acc))
+       #(k acc)))))
+
+
+#_(trampoline
+   map-into-cont
+   identity
+   (fn step [k x]
+     (k (inc x)))
+   '()
+   [1 2 3])
 
 
 (defn prewalk
   [f form]
-  (trampoline walk identity walk-items f identity form))
+  (trampoline walk-cont identity map-into-cont f identity form))
 
 
 (defn postwalk
   [f form]
-  (trampoline walk identity walk-items identity f form))
+  (trampoline walk-cont identity map-into-cont identity f form))
 
 
 (comment
@@ -81,8 +93,7 @@
 
   (postwalk
    #(doto % prn)
-   '(1 (2 3 (4 5)) 6 (7)))
-  )
+   '(1 (2 3 (4 5)) 6 (7))))
 
 
 (comment
@@ -117,6 +128,13 @@
        really-nested-data)
       nil)
 
+  (update
+   (postwalk
+    #(if (number? %) (inc %) %)
+    really-nested-data)
+   :foo
+   dissoc :child)
+
   (def really-long-data
     {:foo (for [i (range 0 limit)]
             {:id i
@@ -124,5 +142,4 @@
 
   (postwalk
    #(if (number? %) (inc %) %)
-   really-long-data)
-  )
+   really-long-data))
