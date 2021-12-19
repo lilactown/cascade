@@ -86,17 +86,6 @@
    '(1 2 3))
 
 
-(defn walk
-  [inner outer form]
-  (letfn [(outer-cont [k x] (k (outer x)))]
-    (trampoline
-    walk-cont
-    (fn inner-cont [k x]
-      (walk-cont k inner-cont outer-cont (inner x)))
-    outer-cont
-    (outer form))))
-
-
 (defn prewalk
   [f form]
   (trampoline
@@ -160,7 +149,7 @@
             :child (k)})
          (dec i)))))
 
-  (def limit 40000)
+  (def limit 10000)
 
   (def really-nested-data
     {:foo (trampoline create (constantly {:id 0}) limit)})
