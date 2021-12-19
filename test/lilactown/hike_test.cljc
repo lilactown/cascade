@@ -48,27 +48,29 @@
                (map->Foo {:a 1 :b 2 :c 3 :extra 4})]]
     (doseq [c colls]
       (let [walked (trampoline hike/walk
-                               identity identity identity
+                               identity
+                               hike/walk-items
+                               identity identity
                                c)]
         (is (= c walked))
         (is (= (type c) (type walked)))
         #_(if (map? c)
-          (is (= (trampoline
-                  hike/walk
-                  identity
-                  #(if (map-entry? %)
-                     (update-in % [1] inc)
-                     %)
-                  #(if (map-entry? %)
-                     (reduce + (vals %))
-                     %)
-                  c)
-                 (reduce + (map (comp inc val) c))))
-          #_(is (= (hike/walk
-                  inc
-                  #(reduce + %)
-                  c)
-                 (reduce + (map inc c)))))
+            (is (= (trampoline
+                    hike/walk
+                    identity
+                    #(if (map-entry? %)
+                       (update-in % [1] inc)
+                       %)
+                    #(if (map-entry? %)
+                       (reduce + (vals %))
+                       %)
+                    c)
+                   (reduce + (map (comp inc val) c))))
+            #_(is (= (hike/walk
+                      inc
+                      #(reduce + %)
+                      c)
+                     (reduce + (map inc c)))))
         (when (or (instance? clojure.lang.PersistentTreeMap c)
                   (instance? clojure.lang.PersistentTreeSet c))
           (is (= (.comparator c) (.comparator walked))))))))
