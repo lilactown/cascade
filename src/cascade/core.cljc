@@ -88,7 +88,7 @@
   If a continuation `k` is passed in, calls it with the final result list.
   If `f` and a `coll` are passed in, trampolines and returns the result list.
   If only a function `f` is passed in, returns a continuation-passing transducer
-  function for use with `cascade.cont/transduce`."
+  function for use with `cascade.core/transduce`."
   ([f]
    (fn [rf]
      (fn
@@ -112,7 +112,7 @@
   If a continuation `k` is passed in, calls it with the final result list.
   If `f` and a `coll` are passed in, trampolines and returns the result list.
   If only a function `f` is passed in, returns a continuation-passing transducer
-  function for use with `cascade.cont/transduce`."
+  function for use with `cascade.core/transduce`."
   ([pred]
    (fn [rf]
      (fn
@@ -139,7 +139,7 @@
   If a continuation `k` is passed in, calls it with the final result list.
   If `f` and a `coll` are passed in, trampolines and returns the result list.
   If only a function `f` is passed in, returns a continuation-passing transducer
-  function for use with `cascade.cont/transduce`."
+  function for use with `cascade.core/transduce`."
   ([pred] (filter (complement pred)))
   ([pred coll] (filter (complement pred) coll))
   ([k pred coll] (filter k (complement pred) coll)))
@@ -152,7 +152,7 @@
   If a continuation `k` is passed in, calls it with the final result list.
   If `f` and a `coll` are passed in, trampolines and returns the result list.
   If only a function `f` is passed in, returns a continuation-passing transducer
-  function for use with `cascade.cont/transduce`."
+  function for use with `cascade.core/transduce`."
   ([pred]
    (fn [rf]
      (fn
@@ -178,7 +178,7 @@
 (defn transduce
   "Continuation-passing style version of `clojure.core/transduce`.
   Takes continuation-passing reducing function `rf` and a CPS xform
-  (see `cascade.cont/map`, `cascade.cont/filter`, et al.) and applies
+  (see `cascade.core/map`, `cascade.core/filter`, et al.) and applies
   (xform rf). Then, reduces the collection using that new reducing fn."
   ([xform rf coll]
    (transduce xform rf (rf) coll))
@@ -191,8 +191,8 @@
 (defn into
   "Returns a new collection consisting of `to` with all of the items
   resulting from trasnducing `from` with `xform`.
-  `xform` should be a continuation-passing transducer. See `cascade.cont/map`,
-  `cascade.cont/filter`, et al."
+  `xform` should be a continuation-passing transducer. See `cascade.core/map`,
+  `cascade.core/filter`, et al."
   [to xform from]
   (transduce xform (cont-with conj) to from))
 
