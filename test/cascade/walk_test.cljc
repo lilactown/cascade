@@ -95,3 +95,16 @@
   (let [coll [:html {:a ["b" 1]} ""]
         f (fn [e] (if (and (vector? e) (not (map-entry? e))) (apply list e) e))]
     (is (= (list :html {:a (list "b" 1)} "") (w/postwalk f coll)))))
+
+
+(deftest seek
+  (is (= 2 (w/seek even? '(1 2 3 4))))
+  (is (= 2 (w/seek (every-pred number? even?) '(1 (2 (3 (4)))))))
+  (is (= 4 (w/seek (every-pred number? even?) '(4 (3 (2 (1)))))))
+  (is (= nil (w/seek (every-pred number? even?) '(1 3 (5)))))
+  (let [data {:id 0
+              :children [{:id 1}
+                         {:id 2}
+                         {:id 3 :children [{:id 4}]}]}]
+    (is (= {:id 3 :children [{:id 4}]}
+           (w/seek (every-pred map? #(= 3 (:id %))) data)))))

@@ -17,9 +17,10 @@
   a single value.
 
   Calls (inner k el) for each element of `form`, building up a data structure of
-  the same type, then calls (outer result).
-
-  The continuation k passed to `inner` must be called with the result.
+  the same type, then calls (outer result). When `k` is called, it will continue
+  the traversal to the next element in the structure. If not called, this
+  short-circuits the traversal and whatever value is returned by `inner` will be
+  passed to `outer`.
 
   Returns a single-arity function for use with `trampoline`.
   See `prewalk` and `postwalk` for more user-friendly variations."
@@ -48,19 +49,20 @@
 
 
 (defn seek
+  "Traverses `form`, returning the first element that (pred el) is true or nil."
   [pred form]
   (trampoline
    walk
    (fn inner [k x]
      (if (pred x)
-       (k x)
+       x
        (walk inner k x)))
-   identity
+   #(when (pred %) %)
    form))
 
 
 #_(seek even? '(1 2 3))
-
+;; => 2
 
 
 (defn postwalk
