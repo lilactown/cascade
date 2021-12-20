@@ -10,6 +10,11 @@
 
 
 (defn cont-with
+  "Takes a non-continuation passing function `f` and any arguments to apply to
+  the front. Returns a function that accepts a continuation as the first
+  argument, and when called applies `f` with the initial args and then any
+  additional args passed to the new function, passing the result to the
+  continuation."
   ([f]
    (fn [k & more]
      (k (apply f more))))
@@ -28,9 +33,12 @@
 
 
 (defn complement
+  "Takes a continuation-passing function `f` and returns a new continuation-
+  passing function which accepts the same args, does the same effects (if any)
+  and calls the passed in continuation with the opposite truth value."
   [f]
-  (fn [k x]
-    (f #(k (not %)) x)))
+  (fn [k & args]
+    (apply f #(k (not %)) args)))
 
 
 (defn reduce
@@ -58,6 +66,7 @@
 
 
 (defn comp
+  "Composes continuation-passing functions right-to-left."
   ([f] (fn
          ([k x] (f k x))
          ([k x y] (f k x y))
@@ -73,6 +82,13 @@
 
 
 (defn map
+  "Applies `f`, a continuation-passing function, to each element of `coll` and
+  collects the results into a list.
+
+  If a continuation `k` is passed in, calls it with the final result list.
+  If `f` and a `coll` are passed in, trampolines and returns the result list.
+  If only a function `f` is passed in, returns a continuation-passing transducer
+  function for use with `cascade.cont/transduce`."
   ([f]
    (fn [rf]
      (fn
@@ -90,6 +106,13 @@
 
 
 (defn filter
+  "Applies `pred`, a continuation-passing function, to each element of `coll`
+  and collects elements which pass a truth-y value into a list.
+
+  If a continuation `k` is passed in, calls it with the final result list.
+  If `f` and a `coll` are passed in, trampolines and returns the result list.
+  If only a function `f` is passed in, returns a continuation-passing transducer
+  function for use with `cascade.cont/transduce`."
   ([pred]
    (fn [rf]
      (fn
@@ -110,12 +133,26 @@
 
 
 (defn remove
+  "Applies `pred`, a continuation-passing function, to each element of `coll`
+  and collects elements which pass a false-y value into a list.
+
+  If a continuation `k` is passed in, calls it with the final result list.
+  If `f` and a `coll` are passed in, trampolines and returns the result list.
+  If only a function `f` is passed in, returns a continuation-passing transducer
+  function for use with `cascade.cont/transduce`."
   ([pred] (filter (complement pred)))
   ([pred coll] (filter (complement pred) coll))
   ([k pred coll] (filter k (complement pred) coll)))
 
 
 (defn keep
+  "Applies `pred`, a continuation-passing function, to each element of `coll`
+  and collects all truth-y results into a list.
+
+  If a continuation `k` is passed in, calls it with the final result list.
+  If `f` and a `coll` are passed in, trampolines and returns the result list.
+  If only a function `f` is passed in, returns a continuation-passing transducer
+  function for use with `cascade.cont/transduce`."
   ([pred]
    (fn [rf]
      (fn
@@ -139,6 +176,10 @@
 
 
 (defn transduce
+  "Continuation-passing style version of `clojure.core/transduce`.
+  Takes continuation-passing reducing function `rf` and a CPS xform
+  (see `cascade.cont/map`, `cascade.cont/filter`, et al.) and applies
+  (xform rf). Then, reduces the collection using that new reducing fn."
   ([xform rf coll]
    (transduce xform rf (rf) coll))
   ([xform rf init coll]
@@ -148,6 +189,10 @@
 
 
 (defn into
+  "Returns a new collection consisting of `to` with all of the items
+  resulting from trasnducing `from` with `xform`.
+  `xform` should be a continuation-passing transducer. See `cascade.cont/map`,
+  `cascade.cont/filter`, et al."
   [to xform from]
   (transduce xform (cont-with conj) to from))
 
