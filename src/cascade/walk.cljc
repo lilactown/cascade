@@ -40,14 +40,6 @@
     #(outer form)))
 
 
-#_(trampoline
-   walk
-   (fn [k x] (k (inc x)))
-   (fn [xs] (reduce + (doto xs prn)))
-   '(1 2 3))
-;; => 6
-
-
 (defn postwalk
   "Like `clojure.walk/postwalk`, but works for extremely large data structures.
   Performs a depth-first, post-order traversal of form.  Calls f on each
@@ -147,11 +139,12 @@
 ;; => (:x :y (:z {:d 1}))
 
 
-(defn macroexpand-all
-  "Recursively performs all possible macroexpansions in form. Works for very
+#?(:clj
+   (defn macroexpand-all
+     "Recursively performs all possible macroexpansions in form. Works for very
   large forms."
-  [form]
-  (prewalk (fn [x] (if (seq? x) (macroexpand x) x)) form))
+     [form]
+     (prewalk (fn [x] (if (seq? x) (macroexpand x) x)) form)))
 
 
 (defn seek

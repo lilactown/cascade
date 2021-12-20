@@ -1,5 +1,6 @@
 {:paths ["src"]
- :aliases {:test
+ :aliases {:cljs {:extra-deps {org.clojure/clojurescript {:mvn/version "LATEST"}}}
+           :test
            {:extra-paths ["test"]
             :extra-deps
             {lambdaisland/kaocha {:mvn/version "1.0.732"}

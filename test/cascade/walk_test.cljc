@@ -43,13 +43,14 @@
 
 (defrecord Foo [a b c])
 
-;; (defmulti get-comparator type)
+#?(:cljs
+   (do (defmulti get-comparator type)
 
-;; (defmethod get-comparator PersistentTreeMap
-;;   [o] (.-comp o))
+       (defmethod get-comparator PersistentTreeMap
+         [o] (.-comp o))
 
-;; (defmethod get-comparator PersistentTreeSet
-;;   [o] (get-comparator (.-tree-map o)))
+       (defmethod get-comparator PersistentTreeSet
+         [o] (get-comparator (.-tree-map o)))))
 
 
 (deftest walk
@@ -86,9 +87,16 @@
                   (fn outer [x]
                     (reduce + x))
                   c))))
-        (when (or (instance? clojure.lang.PersistentTreeMap c)
-                  (instance? clojure.lang.PersistentTreeSet c))
-          (is (= (.comparator c) (.comparator walked))))))))
+        #?(:clj
+           (when (or (instance? clojure.lang.PersistentTreeMap c)
+                     (instance? clojure.lang.PersistentTreeSet c))
+             (is (= (.comparator c) (.comparator walked))))
+           :cljs
+           (when (or (instance? PersistentTreeMap c)
+                     (instance? PersistentTreeSet c))
+             (is (= (get-comparator c) (get-comparator walked)))))))))
+
+#_(js/console.log 1)
 
 
 (deftest walk-mapentry

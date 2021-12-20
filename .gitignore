@@ -2,3 +2,7 @@
 /.cpcache/
 /.lsp/
 /.nrepl-port
+/.cljs_node_repl/
+/node_modules/
+/out/
+/package-lock.json

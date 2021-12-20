@@ -1,0 +1,25 @@
+{
+  "name": "cascade",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lilactown/cascade.git"
+  },
+  "author": "Will Acton",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lilactown/cascade/issues"
+  },
+  "homepage": "https://github.com/lilactown/cascade#readme",
+  "dependencies": {
+    "ws": "^8.4.0"
+  }
+}
