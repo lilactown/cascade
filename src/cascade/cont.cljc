@@ -10,9 +10,21 @@
 
 
 (defn cont-with
-  [f]
-  (fn [k & more]
-    (k (apply f more))))
+  ([f]
+   (fn [k & more]
+     (k (apply f more))))
+  ([f x]
+   (fn [k & more]
+     (k (apply f x more))))
+  ([f x y]
+   (fn [k & more]
+     (k (apply f x y more))))
+  ([f x y z]
+   (fn [k & more]
+     (k (apply f x y z more))))
+  ([f x y z & args]
+   (fn [k & more]
+     (k (apply f x y z (concat args more))))))
 
 
 (defn complement
@@ -45,18 +57,17 @@
        #(k acc)))))
 
 
-#_(reduce
-   (fn step [k acc n]
-     (k (+ acc n)))
-   0
-   '(1 2 3))
-;; => 6
-
-
 (defn comp
-  ([f] (fn [k x] (f k x)))
-  ([f g] (fn [k x]
-           (g #(f k %) x)))
+  ([f] (fn
+         ([k x] (f k x))
+         ([k x y] (f k x y))
+         ([k x y z] (f k x y z))
+         ([k x y z & more] (apply f k x y z more))))
+  ([f g] (fn
+           ([k x] (g #(f k %) x))
+           ([k x y] (g #(f k %) x y))
+           ([k x y z] (g #(f k %) x y z))
+           ([k x y z & more] (apply g #(f k %) x y z more))))
   ([f g & more]
    (clojure.core/reduce comp (list* f g more))))
 
@@ -76,10 +87,6 @@
     (fn [k acc x]
       (f #(k (cons % acc)) x))
     '() coll)))
-
-
-#_(map (cont-with inc) [1 2 3])
-;; => (2 3 4)
 
 
 (defn filter
@@ -102,18 +109,33 @@
     '() coll)))
 
 
-#_(filter (cont-with even?) [1 2 3 4])
-;; => (2 4)
-
-
 (defn remove
   ([pred] (filter (complement pred)))
   ([pred coll] (filter (complement pred) coll))
   ([k pred coll] (filter k (complement pred) coll)))
 
 
-#_(remove (cont-with even?) [1 2 3 4])
-;; => (1 3)
+(defn keep
+  ([pred]
+   (fn [rf]
+     (fn
+       ([k] (rf k))
+       ([k xs] (rf k xs))
+       ([k xs x]
+        (pred #(if (some? %)
+                 (rf k xs %)
+                 (k xs))
+              x)))))
+  ([pred coll] (trampoline keep clojure.core/identity pred coll))
+  ([k pred coll]
+   (reduce
+    k
+    (fn [k acc x]
+      (pred #(if (some? %)
+               (k (cons % acc))
+               (k acc))
+            x))
+    '() coll)))
 
 
 (defn transduce
@@ -125,43 +147,16 @@
    (reduce k (xform rf) init coll)))
 
 
-(comment
-  (transduce
-   (map (cont-with inc))
-   (fn
-     ([k acc] (k acc))
-     ([k acc n] (k (+ acc n))))
-   0
-   '(1 2 3))
-
-  (transduce
-   (filter (cont-with even?))
-   (fn
-     ([k acc] (k acc))
-     ([k acc n] (k (conj acc n))))
-   []
-   '(1 2 3)))
-
-
 (defn into
   [to xform from]
-  (transduce
-   xform
-   (fn
-     ([k xs] (k xs))
-     ([k xs x] (k (conj xs x))))
-   to from))
-
-
-#_(into #{} (map identity) '(1 2 3 4 3 2 1))
-;; => #{1 4 3 2}
+  (transduce xform (cont-with conj) to from))
 
 
 (defn map-into
   "Continuation-passing style of (into acc (map f) coll).
   Calls (f k x) for all `x` in `coll`. `f` must call the passed in continuation
   `c` with the transformed value. `conj`'s the transformed value on to `acc`.
-  Calls `cont` with final result"
+  Calls passed in continuation `k` with final result, or trampolines when not."
   ([f acc coll]
    (trampoline map-into clojure.core/identity f acc coll))
   ([k f acc coll]
@@ -171,12 +166,3 @@
       (f #(k (conj acc %)) x))
     acc
     coll)))
-
-
-#_(map-into
-   (as-cont inc)
-   '()
-   [1 2 3])
-;; => (2 3 4)
-
-
