@@ -11,12 +11,18 @@
 
 (defn walk
   "Continuation-passing style version of `clojure.walk/walk`.
+
   Traverse `form`, an arbitrary data structure. `inner` is a function that
-  accepts a continuation `k` and a value `x`. `outer` is a funcion that accepts
-  a single value `x`..
-  Applies `inner` to each element of `form`, building up a data structure of the
-  same type, then applies `outer` to the result.
-  The continuation `k` passed to `inner` must be called with the result."
+  accepts a continuation and a value. `outer` is a funcion that accepts
+  a single value `x`.
+
+  Calls (inner k el) for each element of `form`, building up a data structure of
+  the same type, then calls (outer result).
+
+  The continuation `k` passed to `inner` must be called with the result.
+
+  Returns a single-arity function for use with `trampoline`.
+  See `prewalk` and `postwalk` for more user-friendly variations."
   ([inner outer form]
    (if (coll? form)
      (cont/map-into
@@ -41,17 +47,11 @@
 ;; => 6
 
 
-(defn prewalk
-  [f form]
-  (trampoline
-   walk
-   (fn inner [k x]
-     (walk inner k (f x)))
-   identity ; outer
-   (f form)))
-
-
 (defn postwalk
+  "Like `clojure.walk/postwalk`, but works for extremely large data structures.
+  Performs a depth-first, post-order traversal of form.  Calls f on each
+  sub-form, uses f's return value in place of the original. Recognizes all
+  Clojure data structures. Consumes seqs as with doall."
   [f form]
   (letfn [(outer [x] (f x))]
     (trampoline
@@ -62,7 +62,21 @@
      form)))
 
 
+(defn prewalk
+  "Like `clojure.walk/prewalk`, but works for extremely large data structures.
+  Similar to `postwalk` but does pre-order traversal."
+  [f form]
+  (trampoline
+   walk
+   (fn inner [k x]
+     (walk inner k (f x)))
+   identity ; outer
+   (f form)))
+
+
 (defn keywordize-keys
+  "Recursively transforms all map keys from strings to keywords.
+  Works for very large data structures."
   [m]
   (letfn [(keywordize-entry
             [[k v]]
@@ -82,6 +96,8 @@
 
 
 (defn stringify-keys
+  "Recursively transforms all map keys from keywords to strings.
+  Works for very large data structures."
   [m]
   (letfn [(stringify-entry
             [[k v]]
@@ -103,7 +119,8 @@
 (defn prewalk-replace
   "Recursively transforms form by replacing keys in smap with their
   values. Like clojure/replace but works on any data structure.  Does
-  replacement at the root of the tree first."
+  replacement at the root of the tree first.
+  Works for very large data structures."
   [smap form]
   (prewalk (fn [x] (if (contains? smap x) (smap x) x)) form))
 
@@ -117,7 +134,8 @@
 (defn postwalk-replace
   "Recursively transforms form by replacing keys in smap with their
   values. Like clojure/replace but works on any data structure.  Does
-  replacement at the leaves of the tree first."
+  replacement at the leaves of the tree first.
+  Works for very large data structures."
   [smap form]
   (postwalk (fn [x] (if (contains? smap x) (smap x) x)) form))
 
@@ -129,7 +147,8 @@
 
 
 (defn macroexpand-all
-  "Recursively performs all possible macroexpansions in form."
+  "Recursively performs all possible macroexpansions in form. Works for very
+  large forms."
   [form]
   (prewalk (fn [x] (if (seq? x) (macroexpand x) x)) form))
 

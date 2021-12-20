@@ -10,8 +10,8 @@
 
 (defn reduce
   "Continuation-passing style version of `reduce`.
-  Calls (step c acc x) for all `x` in `coll`. The `step` function must call
-  the passed in continuation `c` with the new accumulated value.
+  Calls (step c acc x) for all elements in `coll`. The `step` function must call
+  the passed in continuation with the new accumulated value.
   Calls `k` with final result."
   ([step acc coll]
    (trampoline reduce clojure.core/identity step acc coll))
