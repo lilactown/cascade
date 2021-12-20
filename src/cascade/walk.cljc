@@ -1,7 +1,6 @@
 (ns cascade.walk
   (:require
-   [cascade.cont :as cont])
-  (:refer-clojure :exclude [remove]))
+   [cascade.cont :as cont]))
 
 
 (defn map-entry
@@ -175,7 +174,7 @@
 (def none `none)
 (def none? #{none})
 
-(defn remove
+(defn prune
   [pred form]
   (letfn [(outer [x]
             (cond
