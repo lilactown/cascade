@@ -49,7 +49,8 @@
 
 
 (defn seek
-  "Traverses `form`, returning the first element that (pred el) is true or nil."
+  "Traverses `form`, returning the first element that (pred el) is true or nil.
+  May call `pred` multiple times per element."
   [pred form]
   (trampoline
    walk
@@ -174,15 +175,18 @@
 (comment
   (postwalk
    (fn [x] (if (number? x) (inc x) x))
-   {1 2 3 {4 [5]}})
+   {1 2
+    3 {4 [5]}})
 
   (postwalk
    #(doto % prn)
-   {1 2 3 {4 {5 {6 7}}}})
+   {1 2
+    3 {4 [5]}})
 
   (prewalk
    #(doto % prn)
-   {1 2 3 {4 {5 {6 7}}}})
+   {1 2
+    3 {4 [5]}})
 
   (prewalk
    #(doto % prn)
@@ -217,12 +221,12 @@
             :child (k)})
          (dec i)))))
 
-  (def limit 10000)
+  (def limit 40000)
 
   (def really-nested-data
     {:foo (trampoline create (constantly {:id 0}) limit)})
 
-  (do (c.w/postwalk clojure.core/identity really-nested-data)
+  (do (c.w/postwalk identity really-nested-data)
       nil)
 
   (update really-nested-data :foo dissoc :child)
@@ -240,6 +244,8 @@
    [:foo :child :child :child]
    dissoc :child)
 
+  (seek (every-pred map? #(= (dec limit) (:id %))) really-nested-data)
+
   (def really-long-data
     {:foo (for [i (range 0 limit)]
             {:id i
@@ -247,4 +253,6 @@
 
   (postwalk
    #(if (number? %) (inc %) %)
-   really-long-data))
+   really-long-data)
+
+  (seek (every-pred map? #(= (dec limit) (:id %))) really-long-data))
