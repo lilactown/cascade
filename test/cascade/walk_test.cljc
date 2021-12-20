@@ -1,7 +1,7 @@
 (ns cascade.walk-test
   (:require
    [clojure.test :refer [deftest is]]
-   [cascade.cont :as cont]
+   [cascade.core :as c]
    [cascade.walk :as w]))
 
 
@@ -64,7 +64,7 @@
     (doseq [c colls]
       (let [walked (trampoline
                     w/walk
-                    cont/identity ; inner
+                    c/identity ; inner
                     identity ; outer
                     c)]
         (is (= c walked))

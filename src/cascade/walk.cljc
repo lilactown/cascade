@@ -1,6 +1,6 @@
 (ns cascade.walk
   (:require
-   [cascade.cont :as cont]))
+   [cascade.core :as c]))
 
 
 (defn map-entry
@@ -26,7 +26,7 @@
   See `prewalk` and `postwalk` for more user-friendly variations."
   [inner outer form]
   (if (coll? form)
-    (cont/map-into
+    (c/map-into
      (if (map-entry? form)
        #(outer (map-entry %))
        #(outer %))
@@ -195,7 +195,10 @@
          (k none)
          (walk inner (comp k outer) x)))
      outer
-     form)))
+     form))
+  #_(cont/remove
+   (fn [k x]
+     )))
 
 
 (comment

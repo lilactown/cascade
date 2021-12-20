@@ -1,6 +1,6 @@
-(ns cascade.cont
+(ns cascade.core
   (:refer-clojure
-   :exclude [comp complement identity reduce remove transduce map filter into]))
+   :exclude [comp complement identity reduce remove transduce map filter keep into]))
 
 
 (defn identity
