@@ -14,12 +14,12 @@
 
   Traverse `form`, an arbitrary data structure. `inner` is a function that
   accepts a continuation and a value. `outer` is a funcion that accepts
-  a single value `x`.
+  a single value.
 
   Calls (inner k el) for each element of `form`, building up a data structure of
   the same type, then calls (outer result).
 
-  The continuation `k` passed to `inner` must be called with the result.
+  The continuation k passed to `inner` must be called with the result.
 
   Returns a single-arity function for use with `trampoline`.
   See `prewalk` and `postwalk` for more user-friendly variations."
