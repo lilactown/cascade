@@ -12,7 +12,7 @@
 (defn walk
   "Continuation-passing style version of `clojure.walk/walk`.
 
-  Traverse `form`, an arbitrary data structure. `inner` is a function that
+  Traverses `form`, an arbitrary data structure. `inner` is a function that
   accepts a continuation and a value. `outer` is a funcion that accepts
   a single value.
 
@@ -23,20 +23,20 @@
 
   Returns a single-arity function for use with `trampoline`.
   See `prewalk` and `postwalk` for more user-friendly variations."
-  ([inner outer form]
-   (if (coll? form)
-     (cont/map-into
-      (if (map-entry? form)
-        #(outer (map-entry %))
-        #(outer %))
-      (fn step [k item]
-        (inner k item))
-      (cond
-        (map-entry? form) []
-        (record? form) form
-        :else (empty form))
-      form)
-     #(outer form))))
+  [inner outer form]
+  (if (coll? form)
+    (cont/map-into
+     (if (map-entry? form)
+       #(outer (map-entry %))
+       #(outer %))
+     (fn step [k item]
+       (inner k item))
+     (cond
+       (map-entry? form) []
+       (record? form) form
+       :else (empty form))
+     form)
+    #(outer form)))
 
 
 #_(trampoline
@@ -45,6 +45,22 @@
    (fn [xs] (reduce + (doto xs prn)))
    '(1 2 3))
 ;; => 6
+
+
+(defn seek
+  [pred form]
+  (trampoline
+   walk
+   (fn inner [k x]
+     (if (pred x)
+       (k x)
+       (walk inner k x)))
+   identity
+   form))
+
+
+#_(seek even? '(1 2 3))
+
 
 
 (defn postwalk
