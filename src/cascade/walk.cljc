@@ -10,32 +10,35 @@
 
 
 (defn walk
-  ([inner-cont outer-cont form]
-   (trampoline walk clojure.core/identity inner-cont outer-cont form))
-  ([k inner-cont outer-cont form]
-   (let [k (if (map-entry? form)
-             #(outer-cont k (map-entry %))
-             #(outer-cont k %))
-         acc (cond
-               (map-entry? form) []
-               (record? form) form
-               :else (empty form))]
-     (if (coll? form)
-       (cont/map-into
-        k
-        (fn step [k item]
-          (inner-cont k item))
-        acc
-        form)
-       #(k form)))))
+  "Continuation-passing style version of `clojure.walk/walk`.
+  Traverse `form`, an arbitrary data structure. `inner` and `outer` are
+  functions acception a continuation `k` and value `x`.
+  Applies `inner` to each element of `form`, building up a data structure of the
+  same type, then applies `outer` to the result.
+  The continuation `k` passed to each function should be called with the result."
+  ([inner outer form]
+   (trampoline walk identity inner outer form))
+  ([k inner outer form]
+   (if (coll? form)
+     (cont/map-into
+      (if (map-entry? form)
+        #(outer k (map-entry %))
+        #(outer k %))
+      (fn step [k item]
+        (inner k item))
+      (cond
+        (map-entry? form) []
+        (record? form) form
+        :else (empty form))
+      form)
+     #(outer k form))))
 
 
-#_(trampoline
-   walk-cont
-   identity
-   identity
-   #(reduce + %)
+#_(walk
+   (fn [k x] (k (inc x)))
+   (fn [k xs] (k (reduce + (doto xs prn))))
    '(1 2 3))
+;; => 6
 
 
 (defn prewalk
