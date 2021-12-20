@@ -1,4 +1,4 @@
-(ns casecade.walk-test
+(ns cascade.walk-test
   (:require
    [clojure.test :refer [deftest is]]
    [cascade.cont :as cont]
