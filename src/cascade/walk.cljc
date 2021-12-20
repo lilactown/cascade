@@ -1,6 +1,7 @@
 (ns cascade.walk
   (:require
-   [cascade.cont :as cont]))
+   [cascade.cont :as cont])
+  (:refer-clojure :exclude [remove]))
 
 
 (defn map-entry
@@ -46,24 +47,6 @@
    (fn [xs] (reduce + (doto xs prn)))
    '(1 2 3))
 ;; => 6
-
-
-(defn seek
-  "Traverses `form`, returning the first element that (pred el) is true or nil.
-  May call `pred` multiple times per element."
-  [pred form]
-  (trampoline
-   walk
-   (fn inner [k x]
-     (if (pred x)
-       x
-       (walk inner k x)))
-   #(when (pred %) %)
-   form))
-
-
-#_(seek even? '(1 2 3))
-;; => 2
 
 
 (defn postwalk
@@ -170,6 +153,50 @@
   large forms."
   [form]
   (prewalk (fn [x] (if (seq? x) (macroexpand x) x)) form))
+
+
+(defn seek
+  "Traverses `form`, returning the first element that (pred el) is true or nil.
+  May call `pred` multiple times per element."
+  [pred form]
+  (trampoline
+   walk
+   (fn inner [k x]
+     (if (pred x)
+       x
+       (walk inner k x)))
+   #(when (pred %) %) ;outer
+   form))
+
+
+#_(seek even? '(1 2 3))
+;; => 2
+
+(def none `none)
+(def none? #{none})
+
+(defn remove
+  [pred form]
+  (letfn [(outer [x]
+            (cond
+              (map? x) (into
+                        (empty x)
+                        (clojure.core/remove
+                         #(none? (key %)))
+                        x)
+              (map-entry? x) (map-entry [(key x) (when-not (none? (val x))
+                                                   (val x))])
+              (list? x) (apply list (clojure.core/remove none? x))
+              (coll? x) (into (empty x) (clojure.core/remove none?) x)
+              :else x))]
+    (trampoline
+     walk
+     (fn inner [k x]
+       (if (pred x)
+         (k none)
+         (walk inner (comp k outer) x)))
+     outer
+     form)))
 
 
 (comment

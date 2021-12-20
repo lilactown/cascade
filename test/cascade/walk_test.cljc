@@ -108,3 +108,10 @@
                          {:id 3 :children [{:id 4}]}]}]
     (is (= {:id 3 :children [{:id 4}]}
            (w/seek (every-pred map? #(= 3 (:id %))) data)))))
+
+
+(deftest t-remove
+  (is (= '(1 (3 [5 7 {9 nil} #{15 13}]))
+         (w/remove
+          (every-pred number? even?)
+          '(1 (2 3 4 (5 6 7 8 {9 10 12 11} #{13 14 15 16})))))))
