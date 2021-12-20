@@ -62,26 +62,29 @@
                (->Foo 1 2 3)
                (map->Foo {:a 1 :b 2 :c 3 :extra 4})]]
     (doseq [c colls]
-      (let [walked (w/walk
+      (let [walked (trampoline
+                    w/walk
                     cont/identity ; inner
-                    cont/identity ; outer
+                    identity ; outer
                     c)]
         (is (= c walked))
         (is (= (type c) (type walked)))
         (if (map? c)
           (is (= (reduce + (map (comp inc val) c))
-                 (w/walk
+                 (trampoline
+                  w/walk
                   (fn inner [k x]
                     (k (update-in x [1] inc)))
-                  (fn outer [k x]
+                  (fn outer [x]
                     (reduce + (vals x)))
                   c)))
           (is (= (reduce + (map inc c))
-                 (w/walk
+                 (trampoline
+                  w/walk
                   (fn inner [k x]
                     (k (inc x)))
-                  (fn outer [k x]
-                    (k (reduce + x)))
+                  (fn outer [x]
+                    (reduce + x))
                   c))))
         (when (or (instance? clojure.lang.PersistentTreeMap c)
                   (instance? clojure.lang.PersistentTreeSet c))

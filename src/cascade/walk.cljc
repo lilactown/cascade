@@ -11,19 +11,18 @@
 
 (defn walk
   "Continuation-passing style version of `clojure.walk/walk`.
-  Traverse `form`, an arbitrary data structure. `inner` and `outer` are
-  functions acception a continuation `k` and value `x`.
+  Traverse `form`, an arbitrary data structure. `inner` is a function that
+  accepts a continuation `k` and a value `x`. `outer` is a funcion that accepts
+  a single value `x`..
   Applies `inner` to each element of `form`, building up a data structure of the
   same type, then applies `outer` to the result.
-  The continuation `k` passed to each function should be called with the result."
+  The continuation `k` passed to `inner` must be called with the result."
   ([inner outer form]
-   (trampoline walk identity inner outer form))
-  ([k inner outer form]
    (if (coll? form)
      (cont/map-into
       (if (map-entry? form)
-        #(outer k (map-entry %))
-        #(outer k %))
+        #(outer (map-entry %))
+        #(outer %))
       (fn step [k item]
         (inner k item))
       (cond
@@ -31,31 +30,34 @@
         (record? form) form
         :else (empty form))
       form)
-     #(outer k form))))
+     #(outer form))))
 
 
-#_(walk
+#_(trampoline
+   walk
    (fn [k x] (k (inc x)))
-   (fn [k xs] (k (reduce + (doto xs prn))))
+   (fn [xs] (reduce + (doto xs prn)))
    '(1 2 3))
 ;; => 6
 
 
 (defn prewalk
   [f form]
-  (walk
+  (trampoline
+   walk
    (fn inner [k x]
-     (walk k inner cont/identity (f x)))
-   cont/identity ; outer
+     (walk inner k (f x)))
+   identity ; outer
    (f form)))
 
 
 (defn postwalk
   [f form]
-  (letfn [(outer [k x] (k (f x)))]
-    (walk
+  (letfn [(outer [x] (f x))]
+    (trampoline
+     walk
      (fn inner [k x]
-       (walk k inner outer x))
+       (walk inner #(k (outer %)) x))
      outer
      form)))
 
