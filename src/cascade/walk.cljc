@@ -1,54 +1,6 @@
-(ns lilactown.hike)
-
-
-(defn identity-cont
-  [k x]
-  (k x))
-
-
-(defn reduce-cont
-  ([k step acc coll]
-   (reduce-cont k step acc (seq coll) (first coll)))
-  ([k step acc items item]
-   (if (seq items)
-     ;; bounce
-     #(step
-       (fn [acc']
-         (let [items (rest items)]
-           (reduce-cont k step acc' items (first items))))
-       acc
-       item)
-     (if (or (list? acc) (seq? acc))
-       #(k (reverse acc))
-       #(k acc)))))
-
-
-#_(trampoline
-   reduce-cont
-   identity
-   (fn step [done acc n]
-     (done (+ acc n)))
-   0
-   '(1 2 3))
-
-
-(defn map-into-cont
-  [k f acc coll]
-  (reduce-cont
-   k
-   (fn step [done acc x]
-     (f #(done (conj acc %)) x))
-   acc
-   coll))
-
-
-#_(trampoline
-   map-into-cont
-   identity
-   (fn step [k x]
-     (k (inc x)))
-   '()
-   [1 2 3])
+(ns cascade.walk
+  (:require
+   [cascade.cont :as cont]))
 
 
 (defn map-entry
@@ -57,9 +9,9 @@
      :cljs (cljs.core/MapEntry. mk mv nil)))
 
 
-(defn walk-cont
+(defn walk
   ([inner-cont outer-cont form]
-   (walk-cont identity inner-cont outer-cont form))
+   (trampoline walk clojure.core/identity inner-cont outer-cont form))
   ([k inner-cont outer-cont form]
    (let [k (if (map-entry? form)
              #(outer-cont k (map-entry %))
@@ -69,7 +21,7 @@
                (record? form) form
                :else (empty form))]
      (if (coll? form)
-       (map-into-cont
+       (cont/map-into
         k
         (fn step [k item]
           (inner-cont k item))
@@ -88,21 +40,19 @@
 
 (defn prewalk
   [f form]
-  (trampoline
-   walk-cont
+  (walk
    (fn inner [k x]
-     (walk-cont k inner identity-cont (f x)))
-   identity-cont ; outer
+     (walk k inner cont/identity (f x)))
+   cont/identity ; outer
    (f form)))
 
 
 (defn postwalk
   [f form]
   (letfn [(outer [k x] (k (f x)))]
-    (trampoline
-     walk-cont
+    (walk
      (fn inner [k x]
-       (walk-cont k inner outer x))
+       (walk k inner outer x))
      outer
      form)))
 
@@ -230,7 +180,7 @@
   (def really-nested-data
     {:foo (trampoline create (constantly {:id 0}) limit)})
 
-  (do (c.w/postwalk identity really-nested-data)
+  (do (c.w/postwalk clojure.core/identity really-nested-data)
       nil)
 
   (update really-nested-data :foo dissoc :child)
