@@ -118,9 +118,12 @@
                 (w/postwalk
                  identity
                  data)))
+      (is (not (c/eq data (w/postwalk
+                           #(if (number? %) (inc %) %)
+                           data))))
       (is (= (inc limit) (:id (w/postwalk
-                                 #(if (number? %) (inc %) %)
-                                 data))))
+                               #(if (number? %) (inc %) %)
+                               data))))
       (is (= (inc limit) (:id (w/prewalk
                                #(if (number? %) (inc %) %)
                                data))))

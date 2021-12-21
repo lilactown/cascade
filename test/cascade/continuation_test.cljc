@@ -84,16 +84,28 @@
                 ([k acc] (k acc))
                 ([k acc n] (k (+ acc n))))
             0
-            '(1 2 3))))
+            '(1 2 3)))
+      "map")
   (is (= [2 4] (c/transduce
                 (c/filter (c/cont-with even?))
                 (c/cont-with conj)
                 []
-                '(1 2 3 4))))
+                '(1 2 3 4)))
+      "filter")
   (is (= [3 5] (c/transduce
                 (c/keep (c/cont-with #(when (even? %) (inc %))))
                 (c/cont-with conj)
-                [] '(1 2 3 4)))))
+                [] '(1 2 3 4)))
+      "keep")
+  (is (= [3 5] (c/transduce
+                ;; use normal comp instead of c/cont since transducers
+                ;; do not accept continuation
+                (comp
+                 (c/filter (c/cont-with even?))
+                 (c/map (c/cont-with inc)))
+                (c/cont-with conj)
+                [] '(1 2 3 4)))
+      "composition"))
 
 
 (deftest t-into
