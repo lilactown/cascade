@@ -1,4 +1,4 @@
-(ns cascade.core
+(ns cascade.continuation
   (:refer-clojure
    :exclude [comp complement identity reduce remove transduce map filter keep into]))
 
