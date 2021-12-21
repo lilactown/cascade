@@ -1,6 +1,6 @@
 (ns cascade.continuation
   (:refer-clojure
-   :exclude [comp complement identity reduce remove transduce map filter keep into]))
+   :exclude [comp complement identity reduce remove some transduce map filter keep into]))
 
 
 (defn identity
@@ -213,3 +213,133 @@
       (f #(k (conj acc %)) x))
     acc
     coll)))
+
+
+(defn some
+  ([predk coll]
+   (trampoline some clojure.core/identity predk coll))
+  ([k predk coll]
+   #(if (seq coll)
+      (predk
+       (fn [?] (if ?
+                 (fn [] (k ?))
+                 (fn [] (some k predk (rest coll)))))
+       (first coll))
+      (k nil))))
+
+
+#_(some
+ (fn predk [k x]
+   (if (coll? x)
+     (some k predk x)
+     (k (#{:c} x))))
+ [:a :b [[:c]] :d])
+
+#_(some
+ (cont-with #{:e})
+ #{:a :b :c :d})
+
+
+(defprotocol IEqualWithContinuation
+  (-eq [x y k]))
+
+
+(declare eq)
+
+
+(defn -eq-sequential
+  [k xs ys]
+  (if-let [x (first xs)]
+    (if-let [y (first ys)]
+      (eq
+       #(if %
+          (-eq-sequential k (rest xs) (rest ys))
+          (k false))
+       x y)
+      ;; we have x but no y
+      (k false))
+    ;; we have no x, ensure we have no y
+    (k (empty? ys))))
+
+
+(defn -eq-unordered
+  [k xs ys]
+  (if-let [x (first xs)]
+    ;; we can't use contains? here because it could call equiv, which on a
+    ;; nested structure would descend. so instead we go slow and scan
+    (some
+     (fn [z] (if (some? z)
+               (-eq-unordered k (rest xs) ys)
+               (k false)))
+     (fn predk [k y]
+       (eq k x y))
+     ys)
+    (k true)))
+
+
+(defn eq
+  ([x y] (trampoline eq clojure.core/identity x y))
+  ([k x y]
+   (cond
+     (nil? x) #(k (nil? y))
+     (identical? x y) #(k true)
+     (map? x) #(if (map? y)
+                 (if (= (count x) (count y))
+                   (-eq-unordered k x y)
+                   (k false))
+                 (k false))
+     (set? x) #(if (set? y)
+                 (if (= (count x) (count y))
+                   (-eq-unordered k x y)
+                   (k false))
+                 (k false))
+     (sequential? x) #(if (sequential? y)
+                        (if (and (counted? x) (counted? y)
+                                 (== (count x) (count y)))
+                          (-eq-sequential k x y)
+                          (k false))
+                        (k false))
+     (satisfies? IEqualWithContinuation x) #(-eq x y k)
+     :else #(k (= x y)))))
+
+
+(comment
+  (eq "a" "a")
+  (eq 1 2)
+
+  (eq [1 [2] 3] [1 [2] 3])
+
+  (eq #{1 2 3} #{1 2 3})
+  (eq #{1 2 3} #{1 2 4})
+  (eq #{1 2 3} #{1 2})
+
+  (eq #{[1] [2 [3]]}
+      #{[1] [2 [3]]})
+
+  (eq [#{1} [2 #{3 4}]]
+      [#{1} [2 #{3 4}]])
+
+  (eq [#{1} [2 #{3 4}]]
+      [#{1} [2 #{3 4 6}]])
+
+  (eq {:id 1
+       :child {:id 2}}
+      {:id 1
+       :child {:id 2}})
+
+  (eq {:id 1
+       :child {:id 2}}
+      {:id 1
+       :child {:id 2 :foo 3}})
+
+  (eq {:id 1
+       :child {:id 2}}
+      {:id 1
+       :child {:foo 2}})
+
+  (eq {:id 1
+       :child {:id 2}}
+      {:id 1
+       :child {:id [2]}}))
+
+

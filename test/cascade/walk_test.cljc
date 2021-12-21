@@ -114,9 +114,13 @@
     (let [limit 100000
           data (trampoline create identity limit)]
       ;; can't call = here because it overflows the stack
+      (is (c/eq data
+                (w/postwalk
+                 identity
+                 data)))
       (is (= (inc limit) (:id (w/postwalk
-                               #(if (number? %) (inc %) %)
-                               data))))
+                                 #(if (number? %) (inc %) %)
+                                 data))))
       (is (= (inc limit) (:id (w/prewalk
                                #(if (number? %) (inc %) %)
                                data))))
