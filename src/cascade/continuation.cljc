@@ -193,8 +193,10 @@
   resulting from trasnducing `from` with `xform`.
   `xform` should be a continuation-passing transducer. See `cascade.core/map`,
   `cascade.core/filter`, et al."
-  [to xform from]
-  (transduce xform (cont-with conj) to from))
+  ([to xform from]
+   (transduce xform (cont-with conj) to from))
+  ([k to xform from]
+   (transduce k xform (cont-with conj) to from)))
 
 
 (defn map-into

@@ -3,7 +3,7 @@
    [cascade.continuation :as c]))
 
 
-(defn map-entry
+(defn- map-entry
   [[mk mv]]
   #?(:clj (clojure.lang.MapEntry/create mk mv)
      :cljs (cljs.core/MapEntry. mk mv nil)))
@@ -161,67 +161,24 @@
    form))
 
 
-#_(seek even? '(1 2 3))
-;; => 2
-
-(def none `none)
-(def none? #{none})
-
 (defn prune
   [pred form]
-  (letfn [(outer [x]
-            (cond
-              (map? x) (into
-                        (empty x)
-                        (clojure.core/remove
-                         #(none? (key %)))
-                        x)
-              (map-entry? x) (map-entry [(key x) (when-not (none? (val x))
-                                                   (val x))])
-              (list? x) (apply list (clojure.core/remove none? x))
-              (coll? x) (into (empty x) (clojure.core/remove none?) x)
-              :else x))]
-    (trampoline
-     walk
-     (fn inner [k x]
-       (if (pred x)
-         (k none)
-         (walk inner (comp k outer) x)))
-     outer
-     form))
-  #_(cont/remove
-   (fn [k x]
-     )))
-
-
-(comment
-  (postwalk
-   (fn [x] (if (number? x) (inc x) x))
-   {1 2
-    3 {4 [5]}})
-
-  (postwalk
-   #(doto % prn)
-   {1 2
-    3 {4 [5]}})
-
-  (prewalk
-   #(doto % prn)
-   {1 2
-    3 {4 [5]}})
-
-  (prewalk
-   #(doto % prn)
-   [1 [2 3 [4 5]] 6 [7]])
-
-  (postwalk
-   #(doto % prn)
-   [1 [2 3 [4 5]] 6 [7]])
-
-  (postwalk
-   #(doto % prn)
-   '(1 (2 3 (4 5)) 6 (7))))
-
+  (c/keep
+   (fn step [k x]
+     (if-not (pred x)
+       (cond
+         ;; if key doesn't match, remove the entry
+         ;; if val doesn't match, replace it with nil
+         (map-entry? x) (if-not (pred (key x))
+                          (if-not (pred (val x))
+                            (k x)
+                            (k (assoc x 1 nil)))
+                          (k nil))
+         (record? k) (c/into k x (c/keep step) x)
+         (coll? x) (c/into k (empty x) (c/keep step) x)
+         :else (k x))
+       (k nil)))
+   form))
 
 (comment
   (require '[clojure.walk :as c.w])
