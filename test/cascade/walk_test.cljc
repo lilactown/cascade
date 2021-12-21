@@ -119,7 +119,8 @@
                                data))))
       (is (= (inc limit) (:id (w/prewalk
                                #(if (number? %) (inc %) %)
-                               data)))))))
+                               data))))
+      (is (= nil (:id (w/prune (every-pred number? even?) data)))))))
 
 
 (deftest seek
