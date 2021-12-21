@@ -1,6 +1,6 @@
 (ns cascade.walk
   (:require
-   [cascade.continuationinuation :as c]))
+   [cascade.continuation :as c]))
 
 
 (defn map-entry
