@@ -96,13 +96,30 @@
                      (instance? PersistentTreeSet c))
              (is (= (get-comparator c) (get-comparator walked)))))))))
 
-#_(js/console.log 1)
-
 
 (deftest walk-mapentry
   (let [coll [:html {:a ["b" 1]} ""]
         f (fn [e] (if (and (vector? e) (not (map-entry? e))) (apply list e) e))]
     (is (= (list :html {:a (list "b" 1)} "") (w/postwalk f coll)))))
+
+
+(deftest walk-really-nested-data
+  (letfn [(create [k depth]
+            (if (zero? depth)
+              (k {:id depth})
+              #(create
+                (fn [c]
+                  (fn [] (k {:id depth :child c})))
+                (dec depth))))]
+    (let [limit 100000
+          data (trampoline create identity limit)]
+      ;; can't call = here because it overflows the stack
+      (is (= (inc limit) (:id (w/postwalk
+                               #(if (number? %) (inc %) %)
+                               data))))
+      (is (= (inc limit) (:id (w/prewalk
+                               #(if (number? %) (inc %) %)
+                               data)))))))
 
 
 (deftest seek
