@@ -66,7 +66,10 @@
 
 
 (defn comp
-  "Composes continuation-passing functions right-to-left."
+  "Composes continuation-passing functions. The returned function accepts a
+  continuation as its first argument and a variable number of additional args,
+  calls the last function with a continuation of the next one and the arguments,
+  and so on right-to-left."
   ([f] (fn
          ([k x] (f k x))
          ([k x y] (f k x y))
