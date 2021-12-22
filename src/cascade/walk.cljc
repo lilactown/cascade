@@ -46,13 +46,12 @@
   sub-form, uses f's return value in place of the original. Recognizes all
   Clojure data structures. Consumes seqs as with doall."
   [f form]
-  (letfn [(outer [x] (f x))]
-    (trampoline
-     walk
-     (fn inner [k x]
-       (walk inner #(k (outer %)) x))
-     outer
-     form)))
+  (trampoline
+   walk
+   (fn inner [k x]
+     (walk inner #(k (f %)) x))
+   f
+   form))
 
 
 (defn prewalk
