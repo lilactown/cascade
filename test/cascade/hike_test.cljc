@@ -1,8 +1,8 @@
-(ns cascade.walk-test
+(ns cascade.hike-test
   (:require
    [clojure.test :refer [deftest is]]
    [cascade.continuation :as c]
-   [cascade.walk :as w]))
+   [cascade.hike :as w]))
 
 
 (deftest prewalk-replace

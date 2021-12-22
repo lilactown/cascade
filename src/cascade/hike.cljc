@@ -1,4 +1,4 @@
-(ns cascade.walk
+(ns cascade.hike
   (:require
    [cascade.continuation :as c]))
 

@@ -43,8 +43,8 @@
 
 (defn reduce
   "Continuation-passing style version of `reduce`.
-  Calls (step k acc x) for all elements in `coll`. The `step` function should
-  call the passed in continuation `k` with the new accumulated value.
+  Calls (step k acc x) for all elements in seqable `coll`. The `step` function
+  should call the passed in continuation `k` with the new accumulated value.
   If passed in, calls the continuation `k` with final result. Else trampolines
   and returns the result."
   ([step acc coll]
