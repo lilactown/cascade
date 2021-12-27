@@ -4,7 +4,7 @@
 [![cljdoc badge](https://cljdoc.org/badge/town.lilac/cascade)](https://cljdoc.org/d/town.lilac/cascade)
 
 
-Cascade is a library of continuation-passing, tail recursive versions of many
+Cascade is a library of continuation-passing, thunk producing versions of many
 Clojure core functions.
 
 The goal is to allow essentially unbounded recursion and mutual recursion of
