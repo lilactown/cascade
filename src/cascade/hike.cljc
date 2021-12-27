@@ -1,4 +1,16 @@
 (ns cascade.hike
+  "Like clojure.walk, but defines `walk` in a way that supports walking very
+  large, nested data structures without using the call stack.
+
+  Defines recursive tree operations for Clojure data structures. Functions in
+  this namespace take any data structure (list, vector, map, set, seq) and
+  traverses those forms.
+
+  `cascade.hike/walk` is a generic tree walker that uses continuation-passing
+  and returns thunks. It takes any data structure, calls a function with a
+  continuation on every element, and uses the value passed into the continuation
+  in place of the original. This makes it easier to write recursive search-and-replace
+  functions, as shown in the rest of the functions in this namespace."
   (:require
    [cascade.core :as c]))
 
