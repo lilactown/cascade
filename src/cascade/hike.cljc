@@ -41,7 +41,7 @@
 
 
 (defn postwalk
-  "Like `clojure.walk/postwalk`, but works for extremely large data structures.
+  "Like `clojure.walk/postwalk`, but works for very nested forms.
   Performs a depth-first, post-order traversal of form.  Calls f on each
   sub-form, uses f's return value in place of the original. Recognizes all
   Clojure data structures. Consumes seqs as with doall."
@@ -55,7 +55,7 @@
 
 
 (defn prewalk
-  "Like `clojure.walk/prewalk`, but works for extremely large data structures.
+  "Like `clojure.walk/prewalk`, but works for very nested forms.
   Similar to `postwalk` but does pre-order traversal."
   [f form]
   (trampoline
@@ -68,7 +68,7 @@
 
 (defn keywordize-keys
   "Recursively transforms all map keys from strings to keywords.
-  Works for very large data structures."
+  Works for very nested data."
   [m]
   (letfn [(keywordize-entry
             [[k v]]
@@ -89,7 +89,7 @@
 
 (defn stringify-keys
   "Recursively transforms all map keys from keywords to strings.
-  Works for very large data structures."
+  Works for very nested data."
   [m]
   (letfn [(stringify-entry
             [[k v]]
@@ -110,9 +110,8 @@
 
 (defn prewalk-replace
   "Recursively transforms form by replacing keys in smap with their
-  values. Like clojure/replace but works on any data structure.  Does
-  replacement at the root of the tree first.
-  Works for very large data structures."
+  values. Like clojure/replace but works on any data structure. Does
+  replacement at the root of the tree first. Works for very nested forms."
   [smap form]
   (prewalk (fn [x] (if (contains? smap x) (smap x) x)) form))
 
@@ -125,9 +124,8 @@
 
 (defn postwalk-replace
   "Recursively transforms form by replacing keys in smap with their
-  values. Like clojure/replace but works on any data structure.  Does
-  replacement at the leaves of the tree first.
-  Works for very large data structures."
+  values. Like clojure/replace but works on any data structure. Does
+  replacement at the leaves of the tree first. Works for very nested forms."
   [smap form]
   (postwalk (fn [x] (if (contains? smap x) (smap x) x)) form))
 
@@ -141,13 +139,15 @@
 #?(:clj
    (defn macroexpand-all
      "Recursively performs all possible macroexpansions in form. Works for very
-  large forms."
+  nested forms."
      [form]
      (prewalk (fn [x] (if (seq? x) (macroexpand x) x)) form)))
 
 
 (defn seek
   "Traverses `form`, returning the first element that (pred el) is true or nil.
+  Works for very nested forms.
+
   May call `pred` multiple times per element."
   [pred form]
   (trampoline
@@ -161,6 +161,11 @@
 
 
 (defn prune
+  "Traverses `form`, removing all elements that (pred el) returns truthy.
+  Works for very nested forms.
+
+  When an element is a map key and `pred` returns truthy, dissocs the entry
+  from the map."
   [pred form]
   (c/keep
    (fn step [k x]
