@@ -10,7 +10,8 @@
   and returns thunks. It takes any data structure, calls a function with a
   continuation on every element, and uses the value passed into the continuation
   in place of the original. This makes it easier to write recursive search-and-replace
-  functions, as shown in the rest of the functions in this namespace."
+  functions for very nested data that do not use the call stack, as shown in the
+  rest of the functions in this namespace."
   (:require
    [cascade.core :as c]))
 
