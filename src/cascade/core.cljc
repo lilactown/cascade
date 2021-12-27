@@ -290,7 +290,15 @@
 
 
 (defprotocol IEqualWithContinuation
-  (-eq [x y k]))
+  "A protocol for comparing two values using continuation-passing. Used by `eq`
+  to allow outside extension to custom data types."
+  (-eq [x k y] "Accepts a continuation `k` and another value `y`, and either
+ calls the continuation with a boolean representing whether they are equal, or
+ returns a thunk (0-arity function) that when called will continue the
+ operation.
+
+ See `cascade.core/-eq-sequential` and `cascade.core/-eq-unordered` for examples
+ how to write recursive CPS algorithms comparing two complex data structures."))
 
 
 (declare eq)
@@ -327,6 +335,9 @@
 
 
 (defn eq
+  "Just like clojure.core/=, but works for very nested data structures. Supports
+  deep equality of all Clojure data types. For custom data types that you want
+  to descend into, implement IEqualWithContinuation."
   ([x y] (trampoline eq clojure.core/identity x y))
   ([k x y]
    (cond
@@ -348,7 +359,7 @@
                           (-eq-sequential k x y)
                           (k false))
                         (k false))
-     (satisfies? IEqualWithContinuation x) #(-eq x y k)
+     (satisfies? IEqualWithContinuation x) #(-eq x k y)
      :else #(k (= x y)))))
 
 
