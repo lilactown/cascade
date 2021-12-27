@@ -6,3 +6,5 @@
 /node_modules/
 /out/
 /package-lock.json
+/pom.xml
+/target/

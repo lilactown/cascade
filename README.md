@@ -1,5 +1,7 @@
 # cascade
 
+[![Clojars Project](https://img.shields.io/clojars/v/town.lilac/cascade.svg)](https://clojars.org/town.lilac/cascade)
+
 Cascade is a library of continuation-passing, tail recursive versions of many
 Clojure core functions.
 
