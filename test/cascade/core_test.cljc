@@ -1,6 +1,6 @@
-(ns cascade.continuation-test
+(ns cascade.core-test
   (:require
-   [cascade.continuation :as c]
+   [cascade.core :as c]
    [clojure.test :refer [deftest is testing]]))
 
 

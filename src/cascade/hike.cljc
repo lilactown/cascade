@@ -1,6 +1,6 @@
 (ns cascade.hike
   (:require
-   [cascade.continuation :as c]))
+   [cascade.core :as c]))
 
 
 (defn- map-entry
@@ -10,7 +10,7 @@
 
 
 (defn walk
-  "Continuation-passing style version of `clojure.walk/walk`.
+  "Continuation-passing style, trampolined version of `clojure.walk/walk`.
 
   Traverses `form`, an arbitrary data structure. `inner` is a function that
   accepts a continuation and a value. `outer` is a funcion that accepts

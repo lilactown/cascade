@@ -1,7 +1,7 @@
 (ns cascade.hike-test
   (:require
    [clojure.test :refer [deftest is]]
-   [cascade.continuation :as c]
+   [cascade.core :as c]
    [cascade.hike :as w]))
 
 

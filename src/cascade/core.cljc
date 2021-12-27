@@ -1,4 +1,28 @@
-(ns cascade.continuation
+(ns cascade.core
+  "Cascade is a library of continuation-passing, tail recursive versions of many
+  Clojure core functions.
+
+  The goal is to allow essentially unbounded recursion and mutual recursion of
+  seq operations. This means that the seq operations in this library must not
+  use the call stack. Instead, they use a combination of continuation-passing to
+  ensure that operations can always be in the tail position and trampolining to
+  ensure that operations do not use the call stack.
+
+  It aims to cover
+  - seq operations: reduce, transduce, into, and common transducer-producing fns
+  - CPS fn composition: identity, complement, comp
+
+  All seq operations can be passed a continuation as first argument, which will
+  be called on completion of the operation, and returns a thunk (0-arity
+  function) which can be called to begin the operation. A thunk will return
+  either another thunk, which can be called to continue the operation, or the
+  result. Thus, they are meant to be used with `clojure.core/trampoline`.
+
+  If a continuation is not passed in to most seq operations, it is assumed you
+  want to run the operation eagerly and will trampoline for you, returning the
+  result.
+
+  For an example of how this can be used practically, see `cascade.hike`."
   (:refer-clojure
    :exclude [comp complement identity reduce remove some transduce map filter keep into]))
 
