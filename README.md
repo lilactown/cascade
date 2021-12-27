@@ -12,7 +12,7 @@ ensure that operations do not use the call stack.
 This provides the ability to write recursive algorithms that work on very nested
 data structures in Clojure(Script) using familiar operations.
 
-## core
+## cascade.core
 
 `cascade.core` aims to cover
 - seq operations: reduce, transduce, into, and common transducer-producing fns
@@ -43,7 +43,7 @@ using `trampoline` and return the result.
 When passed a continuation, a function and a collection, they will return a
 thunk, meaning it can be trampolined.
 
-## hike
+## cascade.hike
 
 What is a hike, but a really long walk?
 
