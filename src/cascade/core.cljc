@@ -1,5 +1,7 @@
 (ns cascade.core
-  "Cascade is a library of continuation-passing, tail recursive versions of many
+  "# cascade
+
+  Cascade is a library of continuation-passing, tail recursive versions of many
   Clojure core functions.
 
   The goal is to allow essentially unbounded recursion and mutual recursion of
@@ -7,6 +9,9 @@
   use the call stack. Instead, they use a combination of continuation-passing to
   ensure that operations can always be in the tail position and trampolining to
   ensure that operations do not use the call stack.
+
+  This provides the ability to write recursive algorithms that work on very nested
+  data structures in Clojure(Script) using familiar operations.
 
   It aims to cover
   - seq operations: reduce, transduce, into, and common transducer-producing fns
@@ -21,6 +26,23 @@
   If a continuation is not passed in to most seq operations, it is assumed you
   want to run the operation eagerly and will trampoline for you, returning the
   result.
+
+  ## Transducers
+
+  Transducer-producing functions like `map`, `filter`, etc. take functions which
+  accept a continuation and the element of the sequence they are operating on, and
+  should call the continuation with the result instead of returning it.
+
+  When passed a single function, they return a transducer for use with
+  `cascade.core/transduce` and `cascade.core/into`.
+
+  When passed a function and a collection, they will eagerly execute the operation
+  using `trampoline` and return the result.
+
+  When passed a continuation, a function and a collection, they will return a
+  thunk, meaning it can be trampolined.
+
+  ## Examples
 
   For an example of how this can be used practically, see `cascade.hike`."
   (:refer-clojure
@@ -256,15 +278,15 @@
 
 
 #_(some
- (fn predk [k x]
-   (if (coll? x)
-     (some k predk x)
-     (k (#{:c} x))))
- [:a :b [[:c]] :d])
+   (fn predk [k x]
+     (if (coll? x)
+       (some k predk x)
+       (k (#{:c} x))))
+   [:a :b [[:c]] :d])
 
 #_(some
- (cont-with #{:e})
- #{:a :b :c :d})
+   (cont-with #{:e})
+   #{:a :b :c :d})
 
 
 (defprotocol IEqualWithContinuation

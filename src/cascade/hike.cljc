@@ -1,5 +1,7 @@
 (ns cascade.hike
-  "Like clojure.walk, but defines `walk` in a way that supports walking very
+  "What is a hike, but a really long walk?
+
+  Like clojure.walk, but defines `walk` in a way that supports walking very
   large, nested data structures without using the call stack.
 
   Defines recursive tree operations for Clojure data structures. Functions in
