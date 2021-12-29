@@ -334,33 +334,47 @@
     (k true)))
 
 
+(extend-protocol IEqualWithContinuation
+
+  nil (-eq [x k y] #(k (nil? y)))
+
+  #?(:clj clojure.lang.IPersistentMap :cljs IPersistentMap)
+  (-eq [x k y]
+    #(if (map? y)
+       (if (= (count x) (count y))
+         (-eq-unordered k x y)
+         (k false))
+       (k false)))
+
+  #?(:clj clojure.lang.IPersistentSet :cljs IPersistentSet)
+  (-eq [x k y]
+    #(if (set? y)
+       (if (= (count x) (count y))
+         (-eq-unordered k x y)
+         (k false))
+       (k false)))
+
+  #?(:clj clojure.lang.Sequential :cljs ISequential)
+  (-eq [x k y]
+    #(if (sequential? y)
+       (if (and (counted? x) (counted? y)
+                (== (count x) (count y)))
+         (-eq-sequential k x y)
+         (k false))
+       (k false)))
+
+  #?(:clj Object :cljs object) (-eq [x k y] #(k (= x y))))
+
+
 (defn eq
   "Just like clojure.core/=, but works for very nested data structures. Supports
   deep equality of all Clojure data types. For custom data types that you want
   to descend into, implement IEqualWithContinuation."
   ([x y] (trampoline eq clojure.core/identity x y))
   ([k x y]
-   (cond
-     (nil? x) #(k (nil? y))
-     (identical? x y) #(k true)
-     (map? x) #(if (map? y)
-                 (if (= (count x) (count y))
-                   (-eq-unordered k x y)
-                   (k false))
-                 (k false))
-     (set? x) #(if (set? y)
-                 (if (= (count x) (count y))
-                   (-eq-unordered k x y)
-                   (k false))
-                 (k false))
-     (sequential? x) #(if (sequential? y)
-                        (if (and (counted? x) (counted? y)
-                                 (== (count x) (count y)))
-                          (-eq-sequential k x y)
-                          (k false))
-                        (k false))
-     (satisfies? IEqualWithContinuation x) #(-eq x k y)
-     :else #(k (= x y)))))
+   (if (identical? x y)
+     #(k true)
+     (-eq x k y))))
 
 
 (comment
