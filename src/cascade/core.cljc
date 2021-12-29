@@ -358,7 +358,6 @@
   ([x y] (trampoline eq clojure.core/identity x y))
   ([k x y]
    (cond
-     (nil? x) #(k (nil? y))
      (identical? x y) #(k true)
      (map? x) #(if (map? y)
                  (if (= (count x) (count y))
