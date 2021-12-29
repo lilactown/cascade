@@ -332,9 +332,9 @@
           (k false))
        x y)
       ;; we have x but no y
-      (k false))
+      #(k false))
     ;; we have no x, ensure we have no y
-    (k (empty? ys))))
+    #(k (empty? ys))))
 
 
 (defn -eq-unordered
@@ -349,7 +349,7 @@
      (fn predk [k y]
        (eq k x y))
      ys)
-    (k true)))
+    #(k true)))
 
 
 (defn eq
