@@ -314,6 +314,7 @@
     #(k (= x y))))
 
 
+;; JS native types like number, string, etc. do not match `object`
 #?(:cljs
    (extend-type default
      IEqualWithContinuation
