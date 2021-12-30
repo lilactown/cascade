@@ -304,6 +304,24 @@
 (declare eq)
 
 
+(extend-protocol IEqualWithContinuation
+  nil
+  (-eq [_ k y]
+    #(k (nil? y)))
+
+  #?(:clj Object :cljs object)
+  (-eq [x k y]
+    #(k (= x y))))
+
+
+;; JS native types like number, string, etc. do not match `object`
+#?(:cljs
+   (extend-type default
+     IEqualWithContinuation
+     (-eq [x k y]
+       #(k (= x y)))))
+
+
 (defn -eq-sequential
   [k xs ys]
   (if-let [x (first xs)]
@@ -314,9 +332,9 @@
           (k false))
        x y)
       ;; we have x but no y
-      (k false))
+      #(k false))
     ;; we have no x, ensure we have no y
-    (k (empty? ys))))
+    #(k (empty? ys))))
 
 
 (defn -eq-unordered
@@ -331,7 +349,7 @@
      (fn predk [k y]
        (eq k x y))
      ys)
-    (k true)))
+    #(k true)))
 
 
 (defn eq
@@ -341,7 +359,6 @@
   ([x y] (trampoline eq clojure.core/identity x y))
   ([k x y]
    (cond
-     (nil? x) #(k (nil? y))
      (identical? x y) #(k true)
      (map? x) #(if (map? y)
                  (if (= (count x) (count y))
@@ -359,8 +376,7 @@
                           (-eq-sequential k x y)
                           (k false))
                         (k false))
-     (satisfies? IEqualWithContinuation x) #(-eq x k y)
-     :else #(k (= x y)))))
+     :else (-eq x k y))))
 
 
 (comment

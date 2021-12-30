@@ -1,7 +1,7 @@
 (ns cascade.core-test
   (:require
    [cascade.core :as c]
-   [clojure.test :refer [deftest is testing]]))
+   [clojure.test :refer [deftest is]]))
 
 
 (deftest t-identity
