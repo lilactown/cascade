@@ -1,4 +1,4 @@
-# cascade
+# ⛰️ cascade
 
 [![Clojars Project](https://img.shields.io/clojars/v/town.lilac/cascade.svg)](https://clojars.org/town.lilac/cascade)
 [![cljdoc badge](https://cljdoc.org/badge/town.lilac/cascade)](https://cljdoc.org/d/town.lilac/cascade)
