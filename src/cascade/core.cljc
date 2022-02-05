@@ -46,7 +46,7 @@
 
   For an example of how this can be used practically, see `cascade.hike`."
   (:refer-clojure
-   :exclude [comp complement identity reduce remove some transduce map filter keep into]))
+   :exclude [comp complement drop drop-while identity reduce remove some take take-while transduce map filter keep into]))
 
 
 (defn identity
@@ -102,8 +102,13 @@
      ;; bounce
      #(step
        (fn [acc']
-         (let [items (rest coll)]
-           (reduce k step acc' items (first items))))
+         (if (reduced? acc')
+           (let [acc' (unreduced acc')]
+             (if (or (list? acc') (seq? acc'))
+               (k (reverse acc'))
+               (k acc')))
+           (let [items (rest coll)]
+             (reduce k step acc' items (first items)))))
        acc
        el)
      (if (or (list? acc) (seq? acc))
@@ -222,6 +227,138 @@
                (k acc))
             x))
     '() coll)))
+
+
+(defn take
+  "A continuation-passing, thunk-producing version of `clojure.core/take`.
+
+  If a continuation `k` is passed in, returns a thunk that can be called with
+  `trampoline` and will call `k` with a list of the first `n` items of `coll`.
+  If only `n` and `coll` are passed in, eagerly trampolines and returns the
+  result.
+  If only `n` is passed in, returns a continuation-passing transducer function
+  for use with `cascade.core/transduce`."
+  ([n]
+   (let [nv (volatile! n)]
+     (fn [rf]
+       (fn ([k] (rf k))
+         ([k result] (rf k result))
+         ([k result input]
+          (let [n @nv
+                nn (vswap! nv dec)]
+            (if (pos? n)
+              (rf (if (pos? nn)
+                    k
+                    (clojure.core/comp k ensure-reduced))
+                  result input)
+              #(k result))))))))
+  ([n coll] (trampoline take clojure.core/identity n coll))
+  ([k n coll]
+   (reduce
+    (clojure.core/comp k reverse first)
+    (fn [k [acc n] x]
+      (if (pos? n)
+        (k [(cons x acc) (dec n)])
+        (k (reduced [acc n]))))
+    ['() n] coll)))
+
+
+#_(take 4 [1 2 3 4 5])
+
+#_(transduce (take 3) (cont-with +) 0 [1 2 3 4 5 6])
+
+
+(defn take-while
+  ([pred]
+   (fn [rf]
+     (fn
+       ([k] (rf k))
+       ([k result] (rf k result))
+       ([k result input]
+        (pred #(if %
+                 (rf k result input)
+                 (k (reduced result)))
+              input)))))
+  ([pred coll] (trampoline take-while clojure.core/identity pred coll))
+  ([k pred coll]
+   (reduce
+    k
+    (fn [k acc x]
+      (pred #(if %
+               (k (cons x acc))
+               (k (reduced acc)))
+            x))
+    '() coll)))
+
+#_(take-while (cont-with even?) [2 4 6 7 8 10 12])
+
+#_(transduce (take-while (cont-with even?)) (cont-with +) 0 [2 4 6 7 8 10 12])
+
+
+(defn drop
+  ([n]
+   (fn [rf]
+     (let [nv (volatile! n)]
+       (fn
+         ([k] (rf k))
+         ([k xs] (rf k xs))
+         ([k xs x]
+          (let [n @nv]
+            (vswap! nv dec)
+            (if (pos? n)
+              (k xs)
+              (rf k xs x))))))))
+  ([n coll] (trampoline drop clojure.core/identity n coll))
+  ([k n coll]
+   (reduce
+    (clojure.core/comp k reverse first)
+    (fn [k [acc n] x]
+      (if (pos? n)
+        (k [acc (dec n)])
+        (k [(conj acc x) n])))
+    ['() n] coll)))
+
+
+#_(drop 3 [1 2 3 4 5 6])
+
+#_(transduce (drop 3) (cont-with conj) [] [1 2 3 4 5 6])
+
+
+(defn drop-while
+  ([pred]
+   (fn [rf]
+     (let [dv (volatile! true)]
+       (fn
+         ([k] (rf k))
+         ([k xs] (rf k xs))
+         ([k xs x]
+          (let [drop? @dv]
+            (if drop?
+              (pred #(if %
+                       (k xs)
+                       (do
+                         (vreset! dv nil)
+                         (rf k xs x)))
+                    x)
+              (rf k xs x))))))))
+  ([pred coll] (trampoline drop-while clojure.core/identity pred coll))
+  ([k pred coll]
+   (reduce
+    (clojure.core/comp k reverse first)
+    (fn [k [acc drop?] x]
+      (if drop?
+        (pred #(if %
+                 (k [acc drop?])
+                 (k [(conj acc x) nil]))
+              x)
+        (k [(conj acc x) drop?])))
+    ['() true] coll)))
+
+
+#_(drop-while (cont-with even?) [2 4 6 7 8 9 10 11 12])
+
+
+#_(transduce (drop-while (cont-with even?)) (cont-with conj) [] [2 4 6 7 8 10 12])
 
 
 (defn transduce
