@@ -45,7 +45,7 @@
       (bounce! f resolve reject))))
 
 
-(.then (js/Promise.
+#_(.then (js/Promise.
         (trampoline
          (cc/map
           vec
@@ -57,22 +57,40 @@
        prn)
 
 
-(-> (trampoline
+#_(-> (trampoline
      (cc/transduce
       identity
       (comp
-       (cc/map (cc/cont-with
-                #(doto (inc %) (prn :foo))))
+       (cc/map (cc/cont-with inc))
        (cc/map (fn [k x]
-                 (-> (doto (inc x) (prn :bar))
+                 (-> (inc x)
                      (js/Promise.resolve)
                      (.then k))))
-       (cc/map (cc/cont-with
-                #(doto (inc %) (prn :baz))))
+       (cc/map (cc/cont-with inc))
        (cc/take-while (cc/cont-with
                        #(< % 10))))
       (cc/cont-with conj)
       []
       (range 10)))
+    (js/Promise.)
+    (.then prn))
+
+
+;; nested example
+#_(-> (cc/transduce
+     identity
+     (cc/map (fn [k x]
+               (cc/map
+                k
+                (fn [k x]
+                  (-> (* x x)
+                      (js/Promise.resolve)
+                      (.then k)))
+                x)))
+     (cc/cont-with conj)
+     []
+     (for [x (range 5)]
+       (range x 5)))
+    (trampoline)
     (js/Promise.)
     (.then prn))
