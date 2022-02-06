@@ -149,14 +149,23 @@
        ([k] (rf k))
        ([k xs] (rf k xs))
        ([k xs x]
-        (f #(rf k xs %) x)))))
+        (f #(rf k xs %) x))
+       ([k xs x & more]
+        (apply f #(rf k xs x) (conj more x))))))
   ([f coll] (trampoline map clojure.core/identity f coll))
   ([k f coll]
    (reduce
     k
     (fn [k acc x]
       (f #(k (cons % acc)) x))
-    '() coll)))
+    '() coll))
+  ([k f coll & colls]
+   (reduce
+    k
+    (fn [k acc xs]
+      (apply f #(k (cons % acc)) xs))
+    '()
+    (apply clojure.core/map vector coll colls))))
 
 
 (defn filter

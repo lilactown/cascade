@@ -59,7 +59,10 @@
 
 
 (deftest t-map
-  (is (= '(2 3 4) (c/map (c/cont-with inc) [1 2 3]))))
+  (is (= '(2 3 4) (c/map (c/cont-with inc) [1 2 3])))
+  (is (= '([0 0 0] [1 1 1] [2 2 2] [3 3 3] [4 4 4])
+         (trampoline
+          (c/map identity (c/cont-with vector) (range 5) (range 5) (range 5))))))
 
 
 (deftest t-filter
