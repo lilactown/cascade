@@ -79,6 +79,43 @@
                  [1 2 3 4]))))
 
 
+(deftest t-some
+  (is (= :c (c/some (c/cont-with #{:c}) #{:a :b :c :d})))
+  (is (nil? (c/some (c/cont-with #{:e}) #{:a :b :c :d})))
+  (is (= :c (c/some
+             (fn predk [k x]
+               (if (coll? x)
+                 (c/some k predk x)
+                 (k (#{:c} x))))
+             [:a :b [[:c]] :d]))
+      "nested"))
+
+
+(deftest t-take
+  (is (= '(1 2 3 4) (c/take 4 [1 2 3 4 5]))))
+
+
+(deftest t-take-while
+  (is (= '(2 4 6) (c/take-while (c/cont-with even?) [2 4 6 7 8 10 12]))))
+
+
+(deftest t-drop
+  (is (= '(4 5 6) (c/drop 3 [1 2 3 4 5 6]))))
+
+
+(deftest t-drop-while
+  (is (= '(7 8 9 10 11 12)
+         (c/drop-while (c/cont-with even?) [2 4 6 7 8 9 10 11 12]))))
+
+
+(deftest t-mapcat
+  (is (= '(2 3 4 5 6 7)
+         (trampoline
+          c/mapcat identity
+          (fn [k xs] (c/map k (c/cont-with inc) xs))
+          [[1 2 3] [4 5 6]]))))
+
+
 (deftest transducers
   (is (= 9 (c/transduce
             (c/map (c/cont-with inc))
@@ -108,7 +145,28 @@
                  (c/map (c/cont-with inc)))
                 (c/cont-with conj)
                 [] '(1 2 3 4)))
-      "composition"))
+      "composition")
+  (is (= 6 (c/transduce (c/take 3) (c/cont-with +) 0 [1 2 3 4 5 6])) "take")
+  (is (= 12 (c/transduce
+             (c/take-while (c/cont-with even?))
+             (c/cont-with +) 0 [2 4 6 7 8 10 12]))
+      "take-while")
+  (is (= [4 5 6] (c/transduce (c/drop 3) (c/cont-with conj) [] [1 2 3 4 5 6]))
+      "drop")
+  (is (= [7 8 10 12]
+         (c/transduce
+          (c/drop-while (c/cont-with even?)) (c/cont-with conj)
+          [] [2 4 6 7 8 10 12]))
+      "drop-while")
+  (is (= 21 (c/transduce c/cat (c/cont-with +) 0 [[1 2 3] [4 5 6]])) "cat")
+  (is (= [2 3 4 5 6 7]
+         (c/transduce
+          (c/mapcat (fn [k xs]
+                      (c/map k (c/cont-with inc) xs)))
+          (c/cont-with conj)
+          []
+          [[1 2 3] [4 5 6]]))
+      "mapcat"))
 
 
 (deftest t-into

@@ -272,11 +272,6 @@
     ['() n] coll)))
 
 
-#_(take 4 [1 2 3 4 5])
-
-#_(transduce (take 3) (cont-with +) 0 [1 2 3 4 5 6])
-
-
 (defn take-while
   ([pred]
    (fn [rf]
@@ -298,10 +293,6 @@
                (k (reduced acc)))
             x))
     '() coll)))
-
-#_(take-while (cont-with even?) [2 4 6 7 8 10 12])
-
-#_(transduce (take-while (cont-with even?)) (cont-with +) 0 [2 4 6 7 8 10 12])
 
 
 (defn drop
@@ -326,11 +317,6 @@
         (k [acc (dec n)])
         (k [(conj acc x) n])))
     ['() n] coll)))
-
-
-#_(drop 3 [1 2 3 4 5 6])
-
-#_(transduce (drop 3) (cont-with conj) [] [1 2 3 4 5 6])
 
 
 (defn drop-while
@@ -364,12 +350,6 @@
     ['() true] coll)))
 
 
-#_(drop-while (cont-with even?) [2 4 6 7 8 9 10 11 12])
-
-
-#_(transduce (drop-while (cont-with even?)) (cont-with conj) [] [2 4 6 7 8 10 12])
-
-
 (defn- preserving-reduced
   [rf]
   (fn [k acc x]
@@ -391,19 +371,10 @@
        (reduce k rrf xs x)))))
 
 
-#_(transduce cat (cont-with +) 0 [[1 2 3] [4 5 6]])
-
-
 (defn mapcat
   ([f] (clojure.core/comp (map f) cat))
   ([k f & colls]
    (apply map (fn [xs] (k (apply concat xs))) f colls)))
-
-
-#_(trampoline
- mapcat clojure.core/identity
- (fn [k xs] (prn xs) (map k (cont-with inc) xs))
- [[1 2 3] [4 5 6]])
 
 
 (defn transduce
@@ -457,18 +428,6 @@
                  (fn [] (some k predk (rest coll)))))
        (first coll))
       (k nil))))
-
-
-#_(some
-   (fn predk [k x]
-     (if (coll? x)
-       (some k predk x)
-       (k (#{:c} x))))
-   [:a :b [[:c]] :d])
-
-#_(some
-   (cont-with #{:e})
-   #{:a :b :c :d})
 
 
 (defprotocol IEqualWithContinuation
