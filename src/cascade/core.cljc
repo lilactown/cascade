@@ -370,6 +370,29 @@
 #_(transduce (drop-while (cont-with even?)) (cont-with conj) [] [2 4 6 7 8 10 12])
 
 
+(defn- preserving-reduced
+  [rf]
+  (fn [k acc x]
+    (rf (fn [acc']
+          (if (reduced? acc')
+            (k (reduced acc'))
+            (k acc')))
+        acc
+        x)))
+
+
+(defn cat
+  [rf]
+  (let [rrf (preserving-reduced rf)]
+    (fn
+      ([k] (rf k))
+      ([k xs] (rf k xs))
+      ([k xs x]
+       (reduce k rrf xs x)))))
+
+
+#_(transduce cat (cont-with +) 0 [[1 2 3] [4 5 6]])
+
 (defn transduce
   "Continuation-passing style version of `clojure.core/transduce`.
   Takes continuation-passing reducing function `rf` and a CPS xform
