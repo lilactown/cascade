@@ -46,7 +46,7 @@
 
   For an example of how this can be used practically, see `cascade.hike`."
   (:refer-clojure
-   :exclude [comp complement drop drop-while identity reduce remove some take take-while transduce map filter keep into]))
+   :exclude [cat comp complement drop drop-while identity reduce remove some take take-while transduce map filter keep into]))
 
 
 (defn identity
@@ -392,6 +392,19 @@
 
 
 #_(transduce cat (cont-with +) 0 [[1 2 3] [4 5 6]])
+
+
+(defn mapcat
+  ([f] (clojure.core/comp (map f) cat))
+  ([k f & colls]
+   (apply map (fn [xs] (k (apply concat xs))) f colls)))
+
+
+#_(trampoline
+ mapcat clojure.core/identity
+ (fn [k xs] (prn xs) (map k (cont-with inc) xs))
+ [[1 2 3] [4 5 6]])
+
 
 (defn transduce
   "Continuation-passing style version of `clojure.core/transduce`.
