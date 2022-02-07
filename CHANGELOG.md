@@ -1,5 +1,14 @@
 ## Changelog
 
+## 1.2.0
+
+### Added
+
+* Reducing functions (`reduce`, `transduce`, `into`) now respect `reduced`
+* `take`, `take-while`, `drop`, and `drop-while`
+* multi-collection `map` arity
+* `cat` transducer and `mapcat`
+
 ## 1.1.1
 
 ### Added
