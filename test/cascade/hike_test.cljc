@@ -20,6 +20,11 @@
          (w/stringify-keys {:a 1, nil {:b 2 :c 3}, :d 4}))))
 
 
+(deftest keywordize-keys
+  (is (= {:a 1, nil {:b 2, :c 3}, :d 4}
+         (w/keywordize-keys {"a" 1, nil {"b" 2, "c" 3}, "d" 4}))))
+
+
 (deftest prewalk-order
   (is (= [[1 2 {:a 3} (list 4 [5])]
           1 2 {:a 3} [:a 3] :a 3 (list 4 [5])

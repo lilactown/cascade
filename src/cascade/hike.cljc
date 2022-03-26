@@ -81,21 +81,23 @@
    (f form)))
 
 
+(defn transform-keys
+  "Recursively transforms all map keys via `(f k)`.
+  Works for very nested data."
+  [f form]
+  (postwalk
+   (fn [x]
+     (if (map? x)
+       (reduce-kv (fn [m k v] (assoc m (f k) v)) {} x)
+       x))
+   form))
+
+
 (defn keywordize-keys
   "Recursively transforms all map keys from strings to keywords.
   Works for very nested data."
   [m]
-  (letfn [(keywordize-entry
-            [[k v]]
-            (if (string? k)
-              [(keyword k) v]
-              [k v]))]
-    (postwalk
-     (fn [x]
-       (if (map? x)
-         (into {} (map keywordize-entry) x)
-         x))
-     m)))
+  (transform-keys #(if (string? %) (keyword %) %) m))
 
 
 #_(keywordize-keys {"a" 1 :b 2 :c {"d" 3}})
