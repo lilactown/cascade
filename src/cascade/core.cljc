@@ -46,7 +46,7 @@
 
   For an example of how this can be used practically, see `cascade.hike`."
   (:refer-clojure
-   :exclude [cat comp complement drop drop-while identity reduce remove some take take-while transduce map filter keep into]))
+   :exclude [cat comp complement drop drop-while identity reduce remove some take take-while transduce map filter keep into mapcat reduce-kv]))
 
 
 (defn identity
@@ -109,6 +109,42 @@
        acc
        el)
      #(k acc))))
+
+
+(defn -reduce-kv-map
+  [k step acc coll]
+  (if-let [s (seq coll)]
+    #(let [e (first s)]
+       (step (fn [acc]
+               (if (reduced? acc)
+                 (k (unreduced acc))
+                 (-reduce-kv-map k step acc (rest s))))
+             acc
+             (key e)
+             (val e)))
+    #(k acc)))
+
+
+(defn -reduce-kv-vec
+  [k step idx acc coll]
+  (if-let [s (seq coll)]
+    #(step (fn [acc]
+             (if (reduced? acc)
+               (k (unreduced acc))
+               (-reduce-kv-vec k step (inc idx) acc (rest s))))
+           acc
+           idx
+           (first s))
+    #(k acc)))
+
+
+(defn reduce-kv
+  ([step acc coll]
+   (trampoline reduce-kv clojure.core/identity step acc coll))
+  ([k step acc coll]
+   (if (vector? coll)
+     (-reduce-kv-vec k step 0 acc coll)
+     (-reduce-kv-map k step acc coll))))
 
 
 (defn comp

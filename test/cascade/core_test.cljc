@@ -49,6 +49,25 @@
              '(1 (2 (3 4)))))
       "recursive continuation-passing"))
 
+
+(deftest t-reduce-kv
+  (is (= [:a 1 :b 2]
+         ((((c/reduce-kv
+             identity
+             (c/cont-with conj)
+             #_(fn [k acc kx vx]
+                 (k (conj acc kx vx)))
+             []
+             {:a 1 :b 2}))))))
+
+  (is (= {:a 0 :b 1}
+         ((((c/reduce-kv
+             identity
+             (fn [k acc i x]
+               (k (assoc acc x i)))
+             {}
+             [:a :b])))))))
+
 (deftest t-comp
   (let [f (c/comp
            (c/cont-with inc)
