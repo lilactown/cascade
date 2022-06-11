@@ -187,14 +187,14 @@
   ([pred coll] (trampoline filter clojure.core/identity pred coll))
   ([k pred coll]
    (if-let [s (seq coll)]
-     (filter (fn [acc]
-               #(pred (fn [keep?]
+     #(filter (fn [acc]
+                (pred (fn [keep?]
                         (if keep?
                           (k (cons (first s) acc))
                           (k acc)))
                       (first s)))
-             pred
-             (rest s))
+              pred
+              (rest s))
      #(k '()))))
 
 
@@ -271,9 +271,9 @@
    (if-let [s (seq coll)]
      (if (pos? n)
        #(take (fn [acc]
-                (fn [] (k (cons (first s) acc))))
-            (dec n)
-            (rest coll))
+                (k (cons (first s) acc)))
+              (dec n)
+              (rest coll))
        #(k '()))
      #(k '()))))
 
@@ -291,15 +291,18 @@
               input)))))
   ([pred coll] (trampoline take-while clojure.core/identity pred coll))
   ([k pred coll]
-   ;; use reduce here for `reduced`
-   (reduce
-    #(k (seq %))
-    (fn [k acc x]
-      (pred #(if %
-               (k (conj acc x))
-               (k (reduced acc)))
-            x))
-    [] coll)))
+   (prn coll)
+   (if-let [s (seq coll)]
+     #(pred (fn [take?]
+              (if take?
+                (take-while
+                 (fn [acc]
+                   (k (cons (first s) acc)))
+                 pred
+                 (rest coll))
+                (k '())))
+            (first s))
+     #(k '()))))
 
 
 (defn drop
@@ -318,12 +321,12 @@
   ([n coll] (trampoline drop clojure.core/identity n coll))
   ([k n coll]
    (if-let [s (seq coll)]
-     (drop (fn [acc]
-             (if (pos? n)
-               #(k acc)
-               #(k (cons (first s) acc))))
-           (dec n)
-           (rest coll))
+     #(drop (fn [acc]
+              (if (pos? n)
+                (k acc)
+                (k (cons (first s) acc))))
+            (dec n)
+            (rest coll))
      #(k '()))))
 
 
@@ -427,13 +430,13 @@
   ([predk coll]
    (trampoline some clojure.core/identity predk coll))
   ([k predk coll]
-   #(if (seq coll)
-      (predk
+   (if (seq coll)
+     #(predk
        (fn [?] (if ?
                  (fn [] (k ?))
                  (fn [] (some k predk (rest coll)))))
        (first coll))
-      (k nil))))
+     #(k nil))))
 
 
 (defprotocol IEqualWithContinuation

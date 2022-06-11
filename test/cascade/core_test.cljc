@@ -95,16 +95,18 @@
 
 
 (deftest t-take
-  (is (= '(1 2 3 4) (c/take 4 [1 2 3 4 5]))))
+  (is (= '(1 2 3 4) (c/take 4 [1 2 3 4 5])))
+  (is (= '(0 1 2) (((((c/take identity 3 (range 5)))))))))
 
 
 (deftest t-take-while
-  (is (= '(2 4 6) (c/take-while (c/cont-with even?) [2 4 6 7 8 10 12]))))
+  (is (= '(2 4 6) (c/take-while (c/cont-with even?) [2 4 6 7 8 10 12])))
+  (is (= '(0 1 2) (((((c/take-while identity (c/cont-with #(< % 3)) (range 5)))))))))
 
 
 (deftest t-drop
   (is (= '(4 5 6) (c/drop 3 [1 2 3 4 5 6])))
-  (is (= '(4 5 6 7 8 9) ((((((((((((c/drop clojure.core/identity 4 (range 10))))))))))))))))
+  (is (= '(4 5 6 7 8 9) ((((((((((((c/drop identity 4 (range 10))))))))))))))))
 
 
 (deftest t-drop-while
