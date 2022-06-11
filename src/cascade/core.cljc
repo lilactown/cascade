@@ -98,12 +98,12 @@
   ([k step acc coll]
    (reduce k step acc (seq coll) (first coll)))
   ([k step acc coll el]
-   #(if (seq coll)
+   #(if-let [s (seq coll)]
       (step
        (fn [acc']
          (if (reduced? acc')
            (k (unreduced acc'))
-           (let [items (rest coll)]
+           (let [items (rest s)]
              (reduce k step acc' items (first items)))))
        acc
        el)
@@ -308,7 +308,7 @@
         (take (fn [acc]
                 (k (cons (first s) acc)))
               (dec n)
-              (rest coll))
+              (rest s))
         (k '()))
       (k '()))))
 
@@ -326,7 +326,6 @@
               input)))))
   ([pred coll] (trampoline take-while clojure.core/identity pred coll))
   ([k pred coll]
-   (prn coll)
    #(if-let [s (seq coll)]
       (pred (fn [take?]
               (if take?
@@ -334,7 +333,7 @@
                  (fn [acc]
                    (k (cons (first s) acc)))
                  pred
-                 (rest coll))
+                 (rest s))
                 (k '())))
             (first s))
       (k '()))))
@@ -361,7 +360,7 @@
                 (k acc)
                 (k (cons (first s) acc))))
             (dec n)
-            (rest coll))
+            (rest s))
       (k '()))))
 
 
@@ -465,12 +464,12 @@
   ([predk coll]
    (trampoline some clojure.core/identity predk coll))
   ([k predk coll]
-   #(if (seq coll)
+   #(if-let [s (seq coll)]
       (predk
        (fn [?] (if ?
                  (fn [] (k ?))
-                 (fn [] (some k predk (rest coll)))))
-       (first coll))
+                 (fn [] (some k predk (rest s)))))
+       (first s))
       (k nil))))
 
 
