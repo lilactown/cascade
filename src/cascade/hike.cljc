@@ -42,9 +42,10 @@
   [inner outer form]
   (if (coll? form)
     (c/map-into
-     (if (map-entry? form)
-       #(outer (map-entry %))
-       #(outer %))
+     (cond
+       (map-entry? form) #(outer (map-entry %))
+       (or (list? form) (seq? form)) #(outer (reverse %))
+       :else #(outer %))
      (fn step [k item]
        (inner k item))
      (cond
@@ -195,7 +196,8 @@
                             (k x)
                             (k (assoc x 1 nil)))
                           (k nil))
-         (record? k) (c/into k x (c/keep step) x)
+         (record? x) (c/into k x (c/keep step) x)
+         (or (list? x) (seq? x)) (c/keep k step x)
          (coll? x) (c/into k (empty x) (c/keep step) x)
          :else (k x))
        (k nil)))
