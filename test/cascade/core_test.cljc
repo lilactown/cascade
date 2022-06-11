@@ -62,11 +62,13 @@
   (is (= '(2 3 4) (c/map (c/cont-with inc) [1 2 3])))
   (is (= '([0 0 0] [1 1 1] [2 2 2] [3 3 3] [4 4 4])
          (trampoline
-          (c/map identity (c/cont-with vector) (range 5) (range 5) (range 5))))))
+          (c/map identity (c/cont-with vector) (range 5) (range 5) (range 5)))))
+  (is (= '(1 2 3 4 5) (((((((c/map identity (c/cont-with inc) (range 5)))))))))))
 
 
 (deftest t-filter
-  (is (= '(2 4) (c/filter (c/cont-with even?) [1 2 3 4]))))
+  (is (= '(2 4) (c/filter (c/cont-with even?) [1 2 3 4])))
+  (is (= '(0 2 4) (((((((c/filter identity (c/cont-with even?) (range 5)))))))))))
 
 
 (deftest t-remove
@@ -76,7 +78,8 @@
 (deftest t-keep
   (is (= '(3 5) (c/keep
                  (c/cont-with #(when (even? %) (inc %)))
-                 [1 2 3 4]))))
+                 [1 2 3 4])))
+  (is (= '(1 3 5) (((((((c/keep identity (c/cont-with #(when (even? %) (inc %))) (range 5)))))))))))
 
 
 (deftest t-some
@@ -100,7 +103,8 @@
 
 
 (deftest t-drop
-  (is (= '(4 5 6) (c/drop 3 [1 2 3 4 5 6]))))
+  (is (= '(4 5 6) (c/drop 3 [1 2 3 4 5 6])))
+  (is (= '(4 5 6 7 8 9) ((((((((((((c/drop clojure.core/identity 4 (range 10))))))))))))))))
 
 
 (deftest t-drop-while
@@ -174,4 +178,5 @@
 
 
 (deftest map-into
-  (is (= '(2 3 4) (c/map-into (c/cont-with inc) '() [1 2 3]))))
+  (is (= '(4 3 2) (c/map-into (c/cont-with inc) '() [1 2 3])))
+  (is (= [1 2 3] (c/map-into (c/cont-with inc) [] (range 3)))))

@@ -103,17 +103,12 @@
      #(step
        (fn [acc']
          (if (reduced? acc')
-           (let [acc' (unreduced acc')]
-             (if (or (list? acc') (seq? acc'))
-               (k (reverse acc'))
-               (k acc')))
+           (k (unreduced acc'))
            (let [items (rest coll)]
              (reduce k step acc' items (first items)))))
        acc
        el)
-     (if (or (list? acc) (seq? acc))
-       #(k (reverse acc))
-       #(k acc)))))
+     #(k acc))))
 
 
 (defn comp
@@ -154,18 +149,20 @@
         (apply f #(rf k xs x) (conj more x))))))
   ([f coll] (trampoline map clojure.core/identity f coll))
   ([k f coll]
-   (reduce
-    k
-    (fn [k acc x]
-      (f #(k (cons % acc)) x))
-    '() coll))
+   (if-let [s (seq coll)]
+     #(map (fn [acc]
+             (f (fn [el] (k (cons el acc))) (first s)))
+           f
+           (rest s))
+     #(k '())))
   ([k f coll & colls]
    (reduce
-    k
+    #(k (seq %))
     (fn [k acc xs]
-      (apply f #(k (cons % acc)) xs))
-    '()
+      (apply f #(k (conj acc %)) xs))
+    []
     (apply clojure.core/map vector coll colls))))
+
 
 
 (defn filter
@@ -189,10 +186,16 @@
          x)))))
   ([pred coll] (trampoline filter clojure.core/identity pred coll))
   ([k pred coll]
-   (reduce
-    k
-    (fn [k acc x] (pred #(if % (k (cons x acc)) (k acc)) x))
-    '() coll)))
+   (if-let [s (seq coll)]
+     (filter (fn [acc]
+               #(pred (fn [keep?]
+                        (if keep?
+                          (k (cons (first s) acc))
+                          (k acc)))
+                      (first s)))
+             pred
+             (rest s))
+     #(k '()))))
 
 
 (defn remove
@@ -228,14 +231,16 @@
               x)))))
   ([pred coll] (trampoline keep clojure.core/identity pred coll))
   ([k pred coll]
-   (reduce
-    k
-    (fn [k acc x]
-      (pred #(if (some? %)
-               (k (cons % acc))
-               (k acc))
-            x))
-    '() coll)))
+   (if-let [s (seq coll)]
+     #(keep (fn [acc]
+              (pred (fn [x]
+                      (if (some? x)
+                        (k (cons x acc))
+                        (k acc)))
+                   (first s)))
+           pred
+           (rest s))
+     #(k '()))))
 
 
 (defn take
@@ -263,13 +268,14 @@
               #(k result))))))))
   ([n coll] (trampoline take clojure.core/identity n coll))
   ([k n coll]
-   (reduce
-    (clojure.core/comp k reverse first)
-    (fn [k [acc n] x]
-      (if (pos? n)
-        (k [(cons x acc) (dec n)])
-        (k (reduced [acc n]))))
-    ['() n] coll)))
+   (if-let [s (seq coll)]
+     (if (pos? n)
+       #(take (fn [acc]
+                (fn [] (k (cons (first s) acc))))
+            (dec n)
+            (rest coll))
+       #(k '()))
+     #(k '()))))
 
 
 (defn take-while
@@ -285,14 +291,15 @@
               input)))))
   ([pred coll] (trampoline take-while clojure.core/identity pred coll))
   ([k pred coll]
+   ;; use reduce here for `reduced`
    (reduce
-    k
+    #(k (seq %))
     (fn [k acc x]
       (pred #(if %
-               (k (cons x acc))
+               (k (conj acc x))
                (k (reduced acc)))
             x))
-    '() coll)))
+    [] coll)))
 
 
 (defn drop
@@ -310,13 +317,15 @@
               (rf k xs x))))))))
   ([n coll] (trampoline drop clojure.core/identity n coll))
   ([k n coll]
-   (reduce
-    (clojure.core/comp k reverse first)
-    (fn [k [acc n] x]
-      (if (pos? n)
-        (k [acc (dec n)])
-        (k [(conj acc x) n])))
-    ['() n] coll)))
+   (if-let [s (seq coll)]
+     (drop (fn [acc]
+             (if (pos? n)
+               #(k acc)
+               #(k (cons (first s) acc))))
+           (dec n)
+           (rest coll))
+     #(k '()))))
+
 
 
 (defn drop-while
@@ -338,16 +347,13 @@
               (rf k xs x))))))))
   ([pred coll] (trampoline drop-while clojure.core/identity pred coll))
   ([k pred coll]
-   (reduce
-    (clojure.core/comp k reverse first)
-    (fn [k [acc drop?] x]
-      (if drop?
-        (pred #(if %
-                 (k [acc drop?])
-                 (k [(conj acc x) nil]))
-              x)
-        (k [(conj acc x) drop?])))
-    ['() true] coll)))
+   (if-let [s (seq coll)]
+     #(pred (fn [drop?]
+              (if drop?
+                (drop-while k pred (rest s))
+                s))
+            (first s))
+     #(k nil))))
 
 
 (defn- preserving-reduced
