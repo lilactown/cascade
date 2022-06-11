@@ -4,7 +4,8 @@
 
 ### Added
 
-* `cascade.hilke/transform-keys`
+* `cascade.core/reduce-kv`
+* `cascade.hike/transform-keys`
 
 ### Breaking
 
