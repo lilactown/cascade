@@ -1,5 +1,12 @@
 ## Changelog
 
+## 2.0.1
+
+### Fixed
+
+* Some minor perf enhancements
+* Removed a rogue `prn` in `take-while`
+
 ## 2.0.0
 
 ### Added
