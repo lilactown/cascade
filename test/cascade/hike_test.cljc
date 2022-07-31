@@ -92,7 +92,8 @@
                   (fn outer [x]
                     (reduce + x))
                   c))))
-        #?(:clj
+        #?(:bb nil
+           :clj
            (when (or (instance? clojure.lang.PersistentTreeMap c)
                      (instance? clojure.lang.PersistentTreeSet c))
              (is (= (.comparator c) (.comparator walked))))

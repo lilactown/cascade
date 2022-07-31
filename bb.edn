@@ -1,0 +1,5 @@
+{:deps {current/deps {:local/root "."}}
+ :tasks {test-bb
+         {:doc "Run Babashka tests"
+          :extra-paths ["src" "test"]
+          :task bb-test-runner/run-tests}}}
